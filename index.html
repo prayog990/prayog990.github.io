@@ -3,413 +3,372 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text to File Generator</title>
+    <title>Text to File v1.1 - Playground</title>
+    <!-- Google Fonts for that Pro look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-dark: #0f1115;
+            --panel-bg: #1a1d23;
+            --border-color: #2d3139;
+            --accent-color: #4f46e5;
+            --text-main: #e2e8f0;
+            --text-dim: #94a3b8;
+            --input-bg: #262b34;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            padding: 30px;
-            backdrop-filter: blur(10px);
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            color: #333;
-            font-size: 28px;
-            margin-bottom: 10px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .header p {
-            color: #666;
-            font-size: 16px;
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-        }
-
-        .form-label {
-            display: block;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 8px;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        /* --- नया स्टाइल: लेबल और अपलोड बटन को एक लाइन में रखने के लिए --- */
-        .label-container {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+        }
+
+        /* --- Top Navigation --- */
+        nav {
+            height: 60px;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
             align-items: center;
-            margin-bottom: 8px;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 10;
         }
 
-        /* --- नया स्टाइल: अपलोड बटन के लिए --- */
-        .upload-btn {
-            padding: 5px 12px;
-            font-size: 12px;
-            background-color: #f0f2ff;
-            border: 1px solid #d1d9e6;
-            color: #667eea;
-            font-weight: 600;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .upload-btn:hover {
-            background-color: #e0e4ff;
-            transform: translateY(-1px);
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .text-input-container {
-            position: relative;
-        }
-
-        .text-input {
-            width: 100%;
-            min-height: 200px;
-            padding: 15px 45px 15px 15px;
-            border: 2px solid #e1e8ed;
-            border-radius: 10px;
-            font-size: 16px;
-            font-family: inherit;
-            resize: vertical;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-        }
-
-        .text-input:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .clear-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            width: 30px;
-            height: 30px;
-            border: none;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 6px;
-            color: #667eea;
-            cursor: pointer;
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent-color);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        .clear-btn:hover {
-            background: rgba(102, 126, 234, 0.2);
-            transform: scale(1.05);
-        }
-
-        .clear-btn:active {
-            transform: scale(0.95);
-        }
-
-        .filename-input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e1e8ed;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-        }
-
-        .filename-input:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .format-select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e1e8ed;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 12px center;
-            background-repeat: no-repeat;
-            background-size: 16px;
-        }
-
-        .format-select:focus {
-            outline: none;
-            border-color: #667eea;
-            background-color: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .format-select:hover {
-            border-color: #667eea;
-            background-color: #f0f2ff;
-        }
-
-        .download-btn {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-weight: bold;
             color: white;
-            border: none;
-            border-radius: 10px;
+        }
+
+        .title h1 {
             font-size: 18px;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            letter-spacing: -0.5px;
+        }
+
+        /* --- Main Layout --- */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* --- Sidebar (Properties Panel) --- */
+        .sidebar {
+            width: 320px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 1px;
+            margin-bottom: 12px;
+            display: block;
         }
 
-        .download-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        .input-group {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.2s;
         }
 
-        .download-btn:active {
-            transform: translateY(0);
+        .input-group:focus-within {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
         }
 
-        .download-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
+        .sidebar-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 14px;
+            outline: none;
         }
+
+        .sidebar-select {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* --- Editor Area --- */
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-dark);
+            position: relative;
+        }
+
+        .editor-header {
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #12141a;
+        }
+
+        .text-area {
+            flex: 1;
+            width: 100%;
+            background: transparent;
+            border: none;
+            resize: none;
+            padding: 30px;
+            color: #d1d5db;
+            font-family: 'Fira Code', monospace;
+            font-size: 15px;
+            line-height: 1.6;
+            outline: none;
+        }
+
+        /* --- Buttons --- */
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--input-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        /* --- Search Box in Sidebar --- */
+        .search-container {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3d434d; }
 
         @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-                margin: 10px;
-            }
-            
-            .format-grid {
-                grid-template-columns: 1fr;
-            }
+            .main-container { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border-color); }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Text to File Generator</h1>
-            <p>Create and download files in various formats</p>
+
+    <nav>
+        <div class="logo-area">
+            <div class="logo-icon">T</div>
+            <div class="title">
+                <h1>Text to File <span style="color:var(--text-dim); font-weight:400; font-size:14px;">v1.1</span></h1>
+            </div>
         </div>
+        <button type="submit" form="textForm" class="btn-primary" id="downloadBtn">
+            <span>Download File</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        </button>
+    </nav>
 
-        <form id="textForm">
-            <div class="form-group">
-                <!-- === बदलाव 1: अपलोड बटन यहाँ जोड़ा गया है === -->
-                <div class="label-container">
-                    <label class="form-label">Enter Text ↓</label>
-                    <button type="button" id="uploadBtn" class="upload-btn">
-                        Upload File
-                    </button>
+    <div class="main-container">
+        <!-- Sidebar Settings -->
+        <aside class="sidebar">
+            <form id="textForm">
+                <div>
+                    <label class="section-label">File Configuration</label>
+                    <div class="input-group" style="margin-bottom: 12px;">
+                        <input type="text" id="fileName" class="sidebar-input" placeholder="Enter file name..." required>
+                    </div>
+                    <div class="input-group">
+                        <select id="formatSelect" class="sidebar-select">
+                            <option value="txt">Text File (.txt)</option>
+                            <option value="html">HTML File (.html)</option>
+                            <option value="js">JavaScript (.js)</option>
+                            <option value="css">CSS File (.css)</option>
+                            <option value="json">JSON File (.json)</option>
+                            <option value="md">Markdown (.md)</option>
+                            <option value="py">Python (.py)</option>
+                        </select>
+                    </div>
                 </div>
-                <input type="file" id="fileInput" style="display: none;"> <!-- छिपा हुआ फाइल इनपुट -->
-                
-                <div class="text-input-container">
-                    <textarea 
-                        id="textContent" 
-                        class="text-input" 
-                        placeholder="Type or paste your text content here..."
-                        required
-                    ></textarea>
-                    <button type="button" id="clearBtn" class="clear-btn" title="Clear text">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
+
+                <div style="margin-top: 30px;">
+                    <label class="section-label">Quick Search</label>
+                    <div class="search-container">
+                        <div class="input-group" style="flex: 1; padding: 8px 12px;">
+                            <input type="text" id="searchInput" class="sidebar-input" placeholder="Search text...">
+                        </div>
+                        <button type="button" id="searchBtn" class="btn-secondary">🔍</button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label class="form-label">Enter File Name ↓</label>
-                <!-- === बदलाव 2: यहाँ से 'value="my text"' हटा दिया गया है === -->
-                <input 
-                    type="text" 
-                    id="fileName" 
-                    class="filename-input" 
-                    placeholder="my-file" 
-                    required
-                >
-            </div>
+                <div style="margin-top: 30px;">
+                    <label class="section-label">Import External</label>
+                    <button type="button" id="uploadBtn" class="btn-secondary" style="width: 100%;">Upload Local File</button>
+                    <input type="file" id="fileInput" style="display: none;">
+                </div>
+            </form>
+        </aside>
 
-            <div class="form-group">
-                <label class="form-label">Select File Format ↓</label>
-                <select id="formatSelect" class="format-select">
-                    <option value="txt">Text File (.txt)</option>
-                    <option value="js">JS File (.js)</option>
-                    <option value="html">HTML File (.html)</option>
-                    <option value="svg">SVG File (.svg)</option>
-                    <option value="doc">Doc File (.doc)</option>
-                    <option value="ppt">PPT File (.ppt)</option>
-                    <option value="css">CSS File (.css)</option>
-                    <option value="json">JSON File (.json)</option>
-                    <option value="md">Markdown File (.md)</option>
-                    <option value="xml">XML File (.xml)</option>
-                    <option value="csv">CSV File (.csv)</option>
-                    <option value="py">Python File (.py)</option>
-                    <option value="java">Java File (.java)</option>
-                    <option value="cpp">C++ File (.cpp)</option>
-                    <option value="c">C File (.c)</option>
-                    <option value="php">PHP File (.php)</option>
-                    <option value="sql">SQL File (.sql)</option>
-                    <option value="bat">Batch File (.bat)</option>
-                    <option value="sh">Shell Script (.sh)</option>
-                    <option value="yml">YAML File (.yml)</option>
-                </select>
+        <!-- Main Editor -->
+        <section class="editor-container">
+            <div class="editor-header">
+                <span id="charCount" style="font-size: 12px; color: var(--text-dim);">Ready to type...</span>
+                <button type="button" id="clearBtn" class="btn-secondary" style="color: #ff4d4d; border-color: rgba(255,77,77,0.2);">Clear Editor</button>
             </div>
-
-            <button type="submit" class="download-btn" id="downloadBtn">
-                Save the File
-            </button>
-        </form>
+            <textarea 
+                id="textContent" 
+                class="text-area" 
+                placeholder="Start writing your code or text here..."
+                required
+            ></textarea>
+        </section>
     </div>
 
     <script>
-        // Get form elements
         const textContent = document.getElementById('textContent');
         const fileName = document.getElementById('fileName');
         const formatSelect = document.getElementById('formatSelect');
         const downloadBtn = document.getElementById('downloadBtn');
         const form = document.getElementById('textForm');
         const clearBtn = document.getElementById('clearBtn');
-        
-        // === नया कोड: अपलोड फंक्शन के लिए ===
         const uploadBtn = document.getElementById('uploadBtn');
         const fileInput = document.getElementById('fileInput');
+        const charCount = document.getElementById('charCount');
 
-        uploadBtn.addEventListener('click', () => {
-            fileInput.click(); // असली (छिपे हुए) इनपुट पर क्लिक करता है
-        });
+        // File Upload Logic
+        uploadBtn.addEventListener('click', () => fileInput.click());
 
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
-            if (!file) {
-                return; // कोई फाइल नहीं चुनी तो कुछ नहीं करना
-            }
+            if (!file) return;
 
             const reader = new FileReader();
             reader.onload = function(event) {
-                // फाइल का कंटेंट टेक्स्ट एरिया में डाल दो
                 textContent.value = event.target.result;
-                
-                // फाइल का नाम (बिना एक्सटेंशन के) फाइलनेम वाले बॉक्स में डाल दो
                 const nameWithoutExt = file.name.split('.').slice(0, -1).join('.');
-                if (nameWithoutExt) {
-                    fileName.value = nameWithoutExt;
-                }
-                
-                // क्लियर बटन को दिखाने या छिपाने के लिए इनपुट इवेंट चला दो
-                textContent.dispatchEvent(new Event('input'));
+                if (nameWithoutExt) fileName.value = nameWithoutExt;
+                updateStats();
             };
-            
-            reader.readAsText(file); // फाइल को टेक्स्ट के रूप में पढ़ो
-        });
-        // === नया कोड खत्म ===
-
-
-        // Clear button functionality
-        clearBtn.addEventListener('click', function() {
-            textContent.value = '';
-            textContent.focus();
-            clearBtn.style.opacity = '0';
-            clearBtn.style.visibility = 'hidden';
+            reader.readAsText(file);
         });
 
-        // Show/hide clear button on input
-        textContent.addEventListener('input', function() {
-            if (this.value.length > 0) {
-                clearBtn.style.opacity = '1';
-                clearBtn.style.visibility = 'visible';
-            } else {
-                clearBtn.style.opacity = '0';
-                clearBtn.style.visibility = 'hidden';
+        // Clear Logic
+        clearBtn.addEventListener('click', () => {
+            if(confirm("Are you sure you want to clear everything?")) {
+                textContent.value = '';
+                updateStats();
             }
         });
 
-        // Form submission handler
+        // Stats Update
+        function updateStats() {
+            const text = textContent.value;
+            charCount.textContent = `Characters: ${text.length} | Lines: ${text.split('\n').length}`;
+        }
+        textContent.addEventListener('input', updateStats);
+
+        // Download Logic
         form.addEventListener('submit', function(e) {
             e.preventDefault();
-            
             const text = textContent.value;
             const name = fileName.value.trim();
             const format = formatSelect.value; 
-            
-            if (text.trim() === '') {
-                alert('Please enter some text content!');
-                return;
-            }
-            
-            if (name === '') {
-                alert('Please enter a file name!');
-                return;
-            }
-            
-            downloadFile(text, name, format);
-        });
 
-        function downloadFile(content, filename, extension) {
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            if (!text.trim()) return alert('Please enter some content!');
+            
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${filename}.${extension}`;
+            a.download = `${name}.${format}`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-            showSuccessMessage(filename, extension);
-        }
 
-        function showSuccessMessage(filename, extension) {
-            const originalText = downloadBtn.textContent;
-            downloadBtn.textContent = '✓ File Downloaded Successfully!';
-            downloadBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
-            
+            // Success Visual
+            const originalBtn = downloadBtn.innerHTML;
+            downloadBtn.innerHTML = '<span>Saved!</span>';
+            downloadBtn.style.background = '#10b981';
             setTimeout(() => {
-                downloadBtn.textContent = originalText;
-                downloadBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                downloadBtn.innerHTML = originalBtn;
+                downloadBtn.style.background = 'var(--accent-color)';
             }, 2000);
-        }
+        });
+
+        // Search Logic
+        document.getElementById('searchBtn').addEventListener('click', () => {
+            const val = document.getElementById('searchInput').value;
+            const content = textContent.value;
+            if(val && content.includes(val)){
+                const index = content.indexOf(val);
+                textContent.focus();
+                textContent.setSelectionRange(index, index + val.length);
+            } else {
+                alert("Not found in editor");
+            }
+        });
     </script>
 </body>
 </html>
