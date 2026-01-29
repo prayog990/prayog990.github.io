@@ -27,10 +27,10 @@
         body {
             background-color: var(--bg-dark);
             color: var(--text-main);
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden;
         }
 
         /* --- Top Navigation --- */
@@ -42,7 +42,9 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 24px;
-            z-index: 10;
+            z-index: 1000;
+            position: sticky;
+            top: 0;
         }
 
         .logo-area {
@@ -210,8 +212,10 @@
         ::-webkit-scrollbar-thumb:hover { background: #3d434d; }
 
         @media (max-width: 768px) {
-            .main-container { flex-direction: column; }
-            .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border-color); }
+            body { overflow-y: auto; }
+            .main-container { flex-direction: column; overflow: visible; }
+            .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border-color); overflow: visible; }
+            .editor-container { height: 600px; }
         }
     </style>
 </head>
