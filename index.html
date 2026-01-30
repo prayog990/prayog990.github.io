@@ -568,4 +568,218 @@
                 if (navigator.clipboard && window.isSecureContext) {
                     // Modern API (HTTPS only)
                     navigator.clipboard.writeText(text).then(resolve).catch(reject);
- 
+                } else {
+                    // Fallback: Hidden Textarea (Works everywhere)
+                    let textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    textArea.style.position = "fixed";
+                    textArea.style.left = "-999999px";
+                    textArea.style.top = "-999999px";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        textArea.remove();
+                        resolve();
+                    } catch (error) {
+                        textArea.remove();
+                        reject(error);
+                    }
+                }
+            });
+        }
+
+        copyBtn.addEventListener('click', function() {
+            const text = textContent.value;
+            if (!text.trim()) {
+                copyBtn.style.animation = 'shake 0.4s';
+                setTimeout(() => copyBtn.style.animation = '', 400);
+                return;
+            }
+
+            copyToClipboard(text).then(() => {
+                const originalHTML = copyBtn.innerHTML;
+                const originalBg = copyBtn.style.background;
+                const originalColor = copyBtn.style.color;
+
+                copyBtn.innerHTML = '<span>✅ Copied!</span>';
+                copyBtn.style.background = 'rgba(79, 70, 229, 0.15)';
+                copyBtn.style.borderColor = 'var(--accent-color)';
+                copyBtn.style.color = 'var(--accent-color)';
+
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalHTML;
+                    copyBtn.style.background = originalBg;
+                    copyBtn.style.borderColor = 'var(--border-color)';
+                    copyBtn.style.color = originalColor || 'var(--text-main)';
+                }, 2000);
+            }).catch(err => {
+                alert("Error: Could not copy text.");
+            });
+        });
+
+        // Clear Logic
+        clearBtn.addEventListener('click', () => {
+            if(confirm("Are you sure you want to clear everything?")) {
+                textContent.value = '';
+                updateStats();
+            }
+        });
+
+        // Stats Update
+        function updateStats() {
+            const text = textContent.value;
+            charCount.textContent = `Characters: ${text.length} | Lines: ${text.split('\n').length}`;
+        }
+        textContent.addEventListener('input', updateStats);
+
+        const downloadModal = document.getElementById('downloadModal');
+        const modalFileName = document.getElementById('modalFileName');
+        const fileSizeText = document.getElementById('fileSizeText');
+        const confirmDownload = document.getElementById('confirmDownload');
+        const closeModal = document.getElementById('closeModal');
+
+        // Function to calculate size
+        function getReadableFileSize(string) {
+            const bytes = new Blob([string]).size;
+            if (bytes < 1024) return bytes + " B";
+            return (bytes / 1024).toFixed(1) + " KB";
+        }
+
+        // Intercept Form Submit to show Modal
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!textContent.value.trim()) return alert('Please enter some content!');
+            
+            // Fill Modal Data
+            modalFileName.value = fileName.value.trim();
+            fileSizeText.textContent = getReadableFileSize(textContent.value);
+            
+            // Show Modal
+            downloadModal.style.display = 'flex';
+        });
+
+        // Actual Download from Modal
+        confirmDownload.addEventListener('click', () => {
+            const text = textContent.value;
+            const name = modalFileName.value.trim() || "untitled";
+            const format = formatSelect.value;
+
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${name}.${format}`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            downloadModal.style.display = 'none';
+            
+            // Show Success on Main Button
+            const originalBtn = downloadBtn.innerHTML;
+            downloadBtn.innerHTML = '<span>Success!</span>';
+            downloadBtn.style.background = '#10b981';
+            setTimeout(() => {
+                downloadBtn.innerHTML = originalBtn;
+                downloadBtn.style.background = 'var(--accent-color)';
+            }, 2000);
+        });
+
+        closeModal.addEventListener('click', () => {
+            downloadModal.style.display = 'none';
+        });
+
+        // Close on click outside
+        window.addEventListener('click', (e) => {
+            if (e.target == downloadModal) downloadModal.style.display = 'none';
+        });
+
+        // Search Logic
+        document.getElementById('searchBtn').addEventListener('click', () => {
+            const val = document.getElementById('searchInput').value;
+            const content = textContent.value;
+            if(val && content.includes(val)){
+                const index = content.indexOf(val);
+                textContent.focus();
+                textContent.setSelectionRange(index, index + val.length);
+            } else {
+                alert("Not found in editor");
+            }
+        });
+
+        // --- Butter Smooth Draggable Scroll Logic by AJ ---
+        const track = document.getElementById('scrollTrack');
+        const handle = document.getElementById('scrollHandle');
+        let isDragging = false;
+        let handleOffset = 0;
+
+        function updateHandle() {
+            if (isDragging) return; // खीचते समय ऑटो-अपडेट रोकें
+            const scrollableHeight = textContent.scrollHeight - textContent.clientHeight;
+            if (scrollableHeight <= 0) {
+                handle.style.display = 'none';
+                return;
+            }
+            handle.style.display = 'block';
+            const scrollRatio = textContent.scrollTop / scrollableHeight;
+            const maxTop = track.clientHeight - handle.clientHeight;
+            handle.style.top = (scrollRatio * maxTop) + 'px';
+            
+            const handleHeight = Math.max(40, (textContent.clientHeight / textContent.scrollHeight) * track.clientHeight);
+            handle.style.height = handleHeight + 'px';
+        }
+
+        const dragStart = (e) => {
+            isDragging = true;
+            handle.classList.add('active');
+            const pageY = (e.pageY || e.touches[0].pageY);
+            const handleRect = handle.getBoundingClientRect();
+            handleOffset = pageY - handleRect.top; // हैंडल में कहाँ क्लिक किया
+            document.body.style.userSelect = 'none';
+        };
+
+        const dragging = (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const pageY = (e.pageY || e.touches[0].pageY);
+            const trackRect = track.getBoundingClientRect();
+            
+            let newTop = pageY - trackRect.top - handleOffset;
+            const maxTop = track.clientHeight - handle.clientHeight;
+            
+            // Constrain within track
+            newTop = Math.max(0, Math.min(newTop, maxTop));
+            handle.style.top = newTop + 'px';
+
+            // Calculate scroll target
+            const scrollPercentage = newTop / maxTop;
+            const scrollTarget = scrollPercentage * (textContent.scrollHeight - textContent.clientHeight);
+            
+            // RequestAnimationFrame for smooth rendering
+            requestAnimationFrame(() => {
+                textContent.scrollTop = scrollTarget;
+            });
+        };
+
+        const dragEnd = () => {
+            isDragging = false;
+            handle.classList.remove('active');
+            document.body.style.userSelect = 'auto';
+        };
+
+        handle.addEventListener('mousedown', dragStart);
+        handle.addEventListener('touchstart', dragStart, {passive: false});
+        window.addEventListener('mousemove', dragging);
+        window.addEventListener('touchmove', dragging, {passive: false});
+        window.addEventListener('mouseup', dragEnd);
+        window.addEventListener('touchend', dragEnd);
+
+        textContent.addEventListener('scroll', updateHandle);
+        window.addEventListener('resize', updateHandle);
+        textContent.addEventListener('input', updateHandle);
+        
+        setTimeout(updateHandle, 500);
+    </script>
+</body>
+</html>
