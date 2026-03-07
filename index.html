@@ -1,785 +1,761 @@
+<!-- FILE: Text to File v3.5.0 (AJ Creative Edition) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text to File v1.1 - Playground</title>
-    <!-- Google Fonts for that Pro look -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TextForge v3.5 by AJ</title>
+    
+    <!-- Pro Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
-            --bg-dark: #0f1115;
-            --panel-bg: #1a1d23;
-            --border-color: #2d3139;
-            --accent-color: #4f46e5;
+            --bg-deep: #0f172a;
+            --bg-gradient: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
+            --glass-panel: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
             --text-main: #e2e8f0;
-            --text-dim: #94a3b8;
-            --input-bg: #262b34;
+            --text-muted: #94a3b8;
+            --accent: #6366f1;
+            --accent-glow: 0 0 20px rgba(99, 102, 241, 0.5);
+            --danger: #f43f5e;
+            --success: #10b981;
+            --font-ui: 'Outfit', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
+        body.light-mode {
+            --bg-deep: #f0f2f5;
+            --bg-gradient: radial-gradient(circle at 50% 50%, #ffffff 0%, #eef2ff 100%);
+            --glass-panel: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --accent: #4f46e5;
+            --accent-glow: 0 0 15px rgba(79, 70, 229, 0.3);
         }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        
         body {
-            background-color: var(--bg-dark);
+            background-color: var(--bg-deep);
+            background-image: var(--bg-gradient);
+            background-size: 200% 200%;
+            animation: bgMove 15s ease infinite;
             color: var(--text-main);
-            min-height: 100vh;
+            font-family: var(--font-ui);
+            height: 100vh;
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+
+        @keyframes bgMove { 0% {background-position:0% 50%} 50% {background-position:100% 50%} 100% {background-position:0% 50%} }
+
+        /* --- UI CONTAINER --- */
+        .app-grid {
             display: flex;
             flex-direction: column;
-            overflow-x: hidden;
-            transition: background-color 0.3s, color 0.3s;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
         }
 
-        /* --- Light Mode Colors --- */
-        body.light-mode {
-            --bg-dark: #f1f5f9;
-            --panel-bg: #ffffff;
-            --border-color: #e2e8f0;
-            --accent-color: #4f46e5;
-            --text-main: #1e293b;
-            --text-dim: #64748b;
-            --input-bg: #f8fafc;
+        /* --- DASHBOARD PANEL (3-Row Structure) --- */
+        .sidebar {
+            background: var(--glass-panel);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            padding: 15px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 150;
+            height: auto;
+            min-height: 220px;
+            overflow: visible;
         }
 
-        body.light-mode .text-area { color: #334155; }
-        body.light-mode .editor-header { background: #f8fafc; }
-        body.light-mode .sidebar-input, body.light-mode .sidebar-select { color: #1e293b; }
+        .side-row { display: flex; align-items: center; gap: 10px; width: 100%; }
+        
+        /* Search Box Animation */
+        #searchInput { 
+            width: 0; padding: 0; border: none; opacity: 0; 
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        #searchInput.active { 
+            width: 100%; padding: 10px 14px; opacity: 1; 
+            border: 1px solid var(--glass-border);
+        }
 
-        /* --- Top Navigation --- */
-        nav {
+        .sidebar .label { margin-bottom: 4px; font-size: 9px; }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+        
+        .logo i { color: var(--accent); filter: drop-shadow(0 0 8px var(--accent)); }
+
+        .control-group { margin-bottom: 15px; }
+        .label {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px;
+            color: var(--text-muted); font-weight: 700; margin-bottom: 8px; display: block;
+        }
+
+        .cyber-input {
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-main);
+            font-family: var(--font-code);
+            font-size: 13px;
+            transition: 0.3s;
+        }
+        
+        body.light-mode .cyber-input { background: rgba(255,255,255,0.5); }
+
+        /* CUSTOM DROPDOWN UI */
+        .custom-select-wrapper { position: relative; user-select: none; z-index: 2000; }
+        .select-trigger { display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1px solid var(--glass-border); }
+        .custom-options {
+            position: absolute; bottom: calc(100% + 10px); left: 0; right: 0;
+            background: var(--bg-deep); border: 1px solid var(--glass-border);
+            border-radius: 12px; max-height: 250px; overflow-y: auto;
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            z-index: 3000; opacity: 0; pointer-events: none;
+            transform: translateY(15px); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 50px rgba(0,0,0,0.8);
+        }
+        .custom-options.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+        .option-item { 
+            padding: 12px 16px; font-family: var(--font-code); font-size: 13px; 
+            cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: space-between;
+        }
+        .option-item:hover { background: rgba(99, 102, 241, 0.15); color: var(--accent); }
+        .option-item.active { background: var(--accent); color: white; }
+        
+        .custom-options::-webkit-scrollbar { width: 4px; }
+        .custom-options::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+
+        .cyber-input:focus {
+            border-color: var(--accent);
+            box-shadow: var(--accent-glow);
+            background: rgba(0,0,0,0.4);
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            cursor: pointer; padding: 10px; border-radius: 8px; border: none;
+            font-size: 13px; font-weight: 600; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        
+        .btn-glow {
+            background: var(--accent); color: white;
+            box-shadow: var(--accent-glow);
+        }
+        .btn-glow:hover { transform: translateY(-2px); box-shadow: 0 0 25px var(--accent); }
+        .btn-glow:active { transform: scale(0.96); }
+
+        .btn-ghost {
+            background: rgba(255,255,255,0.05); color: var(--text-main);
+            border: 1px solid var(--glass-border);
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); border-color: var(--text-muted); }
+
+        /* --- EDITOR AREA --- */
+        .editor-zone {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0,0,0,0.05);
+            height: 60vh;
+        }
+
+        .toolbar {
             height: 60px;
-            background: var(--panel-bg);
-            border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 24px;
-            z-index: 1000;
-            position: sticky;
-            top: 0;
+            border-bottom: 1px solid var(--glass-border);
+            background: var(--glass-panel);
+            backdrop-filter: blur(10px);
         }
 
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: var(--accent-color);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: white;
-        }
-
-        .title h1 {
-            font-size: 18px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-        }
-
-        /* --- Main Layout --- */
-        .main-container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        /* --- Sidebar (Properties Panel) --- */
-        .sidebar {
-            width: 320px;
-            background: var(--panel-bg);
-            border-right: 1px solid var(--border-color);
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-            overflow-y: auto;
-        }
-
-        .section-label {
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 12px;
-            display: block;
-        }
-
-        .input-group {
-            background: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px;
-            transition: all 0.2s;
-        }
-
-        .input-group:focus-within {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
-        }
-
-        .sidebar-input {
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: white;
-            font-size: 14px;
-            outline: none;
-        }
-
-        .sidebar-select {
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: white;
-            font-size: 14px;
-            outline: none;
-            cursor: pointer;
-        }
-
-        /* --- Editor Area --- */
-        .editor-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-dark);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* --- Draggable Scrollbar UI --- */
-        .custom-scroll-track {
-            position: absolute;
-            top: 60px; /* Header के नीचे से शुरू */
-            right: 4px;
-            bottom: 10px;
-            width: 10px;
-            background: transparent;
-            z-index: 100;
-            cursor: pointer;
-        }
-
-        .custom-scroll-handle {
-            position: absolute;
-            width: 100%;
-            height: 40px; /* डिफ़ॉल्ट हाइट */
-            background: #4a5568;
-            border-radius: 20px;
-            min-height: 30px;
-            transition: background 0.2s, width 0.2s;
-            opacity: 0.6;
-        }
-
-        .custom-scroll-handle:hover, .custom-scroll-handle.active {
-            background: var(--accent-color);
-            opacity: 1;
-            width: 120%;
-            transition: none !important; /* Dragging के दौरान एनीमेशन बंद */
-        }
-
-        /* Hide Default Scrollbar */
-        .text-area {
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE/Edge */
-        }
-        .text-area::-webkit-scrollbar { display: none; }
-
-        .editor-header {
-            padding: 12px 24px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #12141a;
-        }
-
-        .text-area {
+        textarea.editor {
             flex: 1;
             width: 100%;
             background: transparent;
             border: none;
-            resize: none;
-            padding: 30px;
-            color: #d1d5db;
-            font-family: 'Fira Code', monospace;
-            font-size: 15px;
-            line-height: 1.6;
-            outline: none;
-        }
-
-        /* --- Buttons --- */
-        .btn-primary {
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary:hover {
-            filter: brightness(1.1);
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-            background: var(--input-bg);
+            padding: 40px;
             color: var(--text-main);
-            border: 1px solid var(--border-color);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 13px;
-            cursor: pointer;
-        }
-
-        .btn-secondary:hover {
-            background: var(--border-color);
-        }
-
-        /* --- Search Box in Sidebar --- */
-        .search-container {
-            display: flex;
-            gap: 8px;
-        }
-
-        /* --- Custom Sleek Scrollbar (Screenshot Style) --- */
-        .text-area::-webkit-scrollbar {
-            width: 12px;
-        }
-
-        .text-area::-webkit-scrollbar-track {
-            background: transparent;
-            margin: 10px 0;
-        }
-
-        .text-area::-webkit-scrollbar-thumb {
-            background: #4a5568; /* Pill color (Dark mode) */
-            border: 4px solid transparent; /* This creates the thin look */
-            background-clip: padding-box;
-            border-radius: 20px;
-            transition: background 0.3s;
-        }
-
-        .text-area::-webkit-scrollbar-thumb:hover {
-            background: var(--accent-color);
-            border: 4px solid transparent;
-            background-clip: padding-box;
-        }
-
-        /* Adjustments for Light Mode */
-        body.light-mode .text-area::-webkit-scrollbar-thumb {
-            background: #cbd5e1; /* Pill color (Light mode) */
+            font-family: var(--font-code);
+            font-size: 16px;
+            line-height: 1.8;
+            resize: none;
+            scrollbar-width: none;
         }
         
-        body.light-mode .text-area::-webkit-scrollbar-thumb:hover {
-            background: var(--accent-color);
+        /* Premium Soft Highlight - Visibility Fixed */
+        textarea.editor::selection {
+            background: rgba(99, 102, 241, 0.6) !important; 
+            color: #ffffff !important;
+            text-shadow: 0 0 5px rgba(0,0,0,0.2);
         }
+        textarea.editor::placeholder { opacity: 0; } /* Placeholder को छुपाया ताकि हमारा कस्टम UI दिखे */
+
+        /* EMPTY STATE UI */
+        .empty-state-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            pointer-events: none;
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 5;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .empty-state-text {
+            font-family: var(--font-code);
+            font-size: 18px;
+            color: var(--text-muted);
+            opacity: 0.5;
+            letter-spacing: 1px;
+        }
+
+        .upload-trigger-btn {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px dashed var(--accent);
+            padding: 20px 40px;
+            border-radius: 16px;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-trigger-btn:hover {
+            background: rgba(99, 102, 241, 0.2);
+            transform: translateY(-5px);
+            box-shadow: var(--accent-glow);
+        }
+
+        .upload-trigger-btn i {
+            font-size: 30px;
+            color: var(--accent);
+            filter: drop-shadow(0 0 10px var(--accent));
+        }
+
+        .upload-trigger-btn span {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-main);
+        }
+
+        /* --- SCROLLBAR --- */
+        #custom-scrollbar {
+            position: absolute; right: 4px; top: 64px; bottom: 10px; width: 6px;
+            border-radius: 10px; background: transparent; z-index: 100;
+        }
+        .thumb {
+            width: 100%; min-height: 40px; border-radius: 10px;
+            background: var(--text-muted); opacity: 0.4; cursor: grab; transition: opacity 0.3s;
+        }
+        #custom-scrollbar:hover .thumb { opacity: 0.8; background: var(--accent); }
+        .thumb.active { cursor: grabbing; background: var(--accent); opacity: 1; }
+
+        /* --- MODAL --- */
+        .modal-wrap {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999;
+            backdrop-filter: blur(8px); opacity: 0; pointer-events: none;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.4s;
+        }
+        .modal-wrap.active { opacity: 1; pointer-events: auto; }
+        
+        .modal-card {
+            background: var(--bg-deep); border: 1px solid var(--glass-border);
+            width: 400px; padding: 30px; border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: translateY(20px);
+            transition: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal-wrap.active .modal-card { transform: translateY(0); }
+
+        /* --- TOAST --- */
+        #toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: var(--glass-panel); border: 1px solid var(--glass-border);
+            backdrop-filter: blur(12px); padding: 12px 24px; rounded: 50px; border-radius: 50px;
+            color: var(--text-main); font-size: 12px; font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 2000;
+            display: flex; align-items: center; gap: 10px; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #toast.visible { transform: translateX(-50%) translateY(0); }
+
+        /* --- MOBILE TWEAKS --- */
+        .mobile-menu-btn { display: none; font-size: 20px; color: var(--text-main); cursor: pointer; }
 
         @media (max-width: 768px) {
-            body { overflow-y: auto; }
-            .main-container { flex-direction: column; overflow: visible; }
-            .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border-color); overflow: visible; }
-            .editor-container { height: 600px; }
+            .app-grid { flex-direction: column; }
+            .sidebar { 
+                position: relative; width: 100%; height: 40vh; 
+                transform: none; box-shadow: none; border-top: 1px solid var(--glass-border);
+            }
+            .mobile-menu-btn { display: none; }
+            .toolbar { padding: 0 15px; }
+            textarea.editor { padding: 20px; font-size: 14px; }
+            #custom-scrollbar { width: 3px; }
         }
 
-        /* --- Custom Download Modal --- */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(4px);
-            display: none;
-            justify-content: center;
-            align-items: flex-end; /* Mobile friendly */
-            z-index: 2000;
-        }
-
-        .modal-content {
-            background: var(--panel-bg);
-            width: 100%;
-            max-width: 450px;
-            border-radius: 20px 20px 0 0;
-            padding: 24px;
-            animation: slideUp 0.3s ease-out;
-            border: 1px solid var(--border-color);
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-
-        .modal-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .file-icon-circle {
-            width: 45px;
-            height: 45px;
-            background: #3d434d;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .modal-input-wrapper {
-            flex: 1;
-            position: relative;
-        }
-
-        .modal-input {
-            width: 100%;
-            background: transparent;
-            border: none;
-            border-bottom: 2px solid var(--border-color);
-            color: white;
-            font-size: 18px;
-            padding: 5px 0;
-            outline: none;
-        }
-
-        .modal-input:focus {
-            border-bottom-color: var(--accent-color);
-        }
-
-        .modal-divider {
-            height: 1px;
-            background: var(--border-color);
-            margin: 15px 0;
-        }
-
-        .modal-btn {
-            width: 100%;
-            padding: 16px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: transparent;
-            border: none;
-            color: white;
-            cursor: pointer;
-            border-radius: 12px;
-            transition: 0.2s;
-        }
-
-        .modal-btn:hover { background: var(--input-bg); }
-
-        .btn-text-group { text-align: left; }
-        .btn-main-text { display: block; font-size: 16px; font-weight: 500; }
-        .btn-sub-text { font-size: 12px; color: var(--text-dim); }
-
-        .cancel-text { color: var(--text-dim); font-weight: 500; }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-4px); }
-            75% { transform: translateX(4px); }
-        }
     </style>
 </head>
 <body>
 
-    <nav>
-        <div class="logo-area">
-            <div class="logo-icon">T</div>
-            <div class="title">
-                <h1>Text to File <span style="color:var(--text-dim); font-weight:400; font-size:14px;">v1.1</span></h1>
-            </div>
-        </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <button id="themeToggle" class="btn-secondary" style="padding: 8px; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 18px;">
-                <span id="themeIcon">🌙</span>
-            </button>
-            <button type="submit" form="textForm" class="btn-primary" id="downloadBtn">
-                <span>Download File</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            </button>
-        </div>
-    </nav>
-
-    <div class="main-container">
-        <!-- Sidebar Settings -->
-        <aside class="sidebar">
-            <form id="textForm">
-                <div>
-                    <label class="section-label">File Configuration</label>
-                    <div class="input-group" style="margin-bottom: 12px;">
-                        <input type="text" id="fileName" class="sidebar-input" placeholder="Enter file name..." required>
-                    </div>
-                    <div class="input-group">
-                        <select id="formatSelect" class="sidebar-select">
-                            <option value="txt">Text File (.txt)</option>
-                            <option value="html">HTML File (.html)</option>
-                            <option value="js">JavaScript (.js)</option>
-                            <option value="css">CSS File (.css)</option>
-                            <option value="json">JSON File (.json)</option>
-                            <option value="md">Markdown (.md)</option>
-                            <option value="py">Python (.py)</option>
-                        </select>
+    <div class="app-grid">
+        <!-- MAIN EDITOR -->
+        <main class="editor-zone">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div class="logo" style="margin-bottom: 0; font-size: 18px;">
+                        <i class="fa-solid fa-cube"></i> TextForge
                     </div>
                 </div>
-
-                <div style="margin-top: 30px;">
-                    <label class="section-label">Quick Search</label>
-                    <div class="search-container">
-                        <div class="input-group" style="flex: 1; padding: 8px 12px;">
-                            <input type="text" id="searchInput" class="sidebar-input" placeholder="Search text...">
-                        </div>
-                        <button type="button" id="searchBtn" class="btn-secondary">🔍</button>
-                    </div>
-                </div>
-
-                <div style="margin-top: 30px;">
-                    <label class="section-label">Import External</label>
-                    <button type="button" id="uploadBtn" class="btn-secondary" style="width: 100%;">Upload Local File</button>
-                    <input type="file" id="fileInput" style="display: none;">
-                </div>
-            </form>
-        </aside>
-
-        <!-- Main Editor -->
-        <section class="editor-container">
-            <div class="editor-header">
-                <span id="charCount" style="font-size: 12px; color: var(--text-dim);">Ready to type...</span>
+                
                 <div style="display: flex; gap: 8px;">
-                    <button type="button" id="copyBtn" class="btn-secondary" style="display: flex; align-items: center; gap: 6px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        <span>Copy</span>
+                    <button onclick="toggleTheme()" class="btn btn-ghost" style="width: 32px; height: 32px; border-radius: 50%; padding:0;">
+                        <i class="fa-solid fa-moon" id="themeIcon"></i>
                     </button>
-                    <button type="button" id="clearBtn" class="btn-secondary" style="color: #ff4d4d; border-color: rgba(255,77,77,0.2);">Clear Editor</button>
+                    <button onclick="copyContent()" class="btn btn-ghost" style="width: 32px; height: 32px; padding:0;" title="Copy"><i class="fa-regular fa-copy"></i></button>
+                    <button onclick="clearContent()" class="btn btn-ghost" style="width: 32px; height: 32px; padding:0; color: var(--danger); border-color: rgba(244, 63, 94, 0.3);" title="Clear"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
             </div>
-            <textarea 
-                id="textContent" 
-                class="text-area" 
-                placeholder="Start writing your code or text here..."
-                required
-            ></textarea>
-            <!-- New Scroll Handle -->
-            <div id="scrollTrack" class="custom-scroll-track">
-                <div id="scrollHandle" class="custom-scroll-handle"></div>
-            </div>
-        </section>
-    </div>
 
-    <!-- Download Modal -->
-    <div id="downloadModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="file-icon-circle">📄</div>
-                <div class="modal-input-wrapper">
-                    <input type="text" id="modalFileName" class="modal-input" placeholder="File name">
+            <!-- TextArea -->
+            <textarea id="editor" class="editor" spellcheck="false" placeholder="// Start typing your masterpiece..."></textarea>
+            
+            <!-- EMPTY STATE UI -->
+            <div id="emptyState" class="empty-state-container">
+                <div class="empty-state-text">// Paste text Here</div>
+                <div style="color: var(--text-muted); font-size: 12px; font-family: var(--font-code);">or</div>
+                <div class="upload-trigger-btn" onclick="document.getElementById('fileInput').click()">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Upload File</span>
                 </div>
-                <span style="font-size: 18px;">✏️</span>
             </div>
             
-            <div class="modal-divider"></div>
+            <!-- Custom Scrollbar -->
+            <div id="custom-scrollbar"><div class="thumb"></div></div>
+        </main>
 
-            <button id="confirmDownload" class="modal-btn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                <div class="btn-text-group">
-                    <span class="btn-main-text">Download</span>
-                    <span id="fileSizeText" class="btn-sub-text">0 B</span>
+        <!-- DASHBOARD (Bottom Panel) -->
+        <footer class="sidebar" id="sidebar">
+            <!-- Row 1: Search & Stats -->
+            <div class="side-row" style="justify-content: flex-end;">
+                <input type="text" id="searchInput" class="cyber-input" placeholder="Search code..." onkeyup="if(event.key==='Enter') findText()" style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button onclick="toggleSearch()" class="btn btn-ghost" style="width: 38px; height: 38px; padding:0;"><i class="fa-solid fa-magnifying-glass"></i></button>
+                    <span id="stats" style="font-size: 10px; font-weight: 700; opacity: 0.6; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--glass-border); white-space: nowrap;">Ready</span>
                 </div>
-            </button>
+            </div>
 
-            <button id="closeModal" class="modal-btn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                <span class="cancel-text">Cancel</span>
-            </button>
+            <!-- Row 2: File Details -->
+            <div class="side-row">
+                <div style="flex: 2;">
+                    <label class="label">File Name</label>
+                    <input type="text" id="fileName" class="cyber-input" value="untitled" placeholder="Name">
+                </div>
+                <div style="flex: 1;">
+                    <label class="label">Format</label>
+                    <div class="custom-select-wrapper">
+                        <div id="fileExtBtn" class="cyber-input select-trigger" onclick="toggleExtList()">
+                            <span id="selectedExt">.html</span>
+                            <i class="fa-solid fa-chevron-up" style="font-size: 10px; opacity: 0.5;"></i>
+                        </div>
+                        <div id="extList" class="custom-options">
+                            <div class="option-item active" onclick="selectExt('html')">.html</div>
+                            <div class="option-item" onclick="selectExt('txt')">.txt</div>
+                            <div class="option-item" onclick="selectExt('pdf')">.pdf</div>
+                            <div class="option-item" onclick="selectExt('js')">.js</div>
+                            <div class="option-item" onclick="selectExt('css')">.css</div>
+                            <div class="option-item" onclick="selectExt('json')">.json</div>
+                            <div class="option-item" onclick="selectExt('csv')">.csv</div>
+                            <div class="option-item" onclick="selectExt('md')">.md</div>
+                            <div class="option-item" onclick="selectExt('py')">.py</div>
+                            <div class="option-item" onclick="selectExt('sh')">.sh</div>
+                            <div class="option-item" onclick="selectExt('bat')">.bat</div>
+                            <div class="option-item" onclick="selectExt('log')">.log</div>
+                            <div class="option-item" onclick="selectExt('sql')">.sql</div>
+                            <div class="option-item" onclick="selectExt('xml')">.xml</div>
+                            <div class="option-item" onclick="selectExt('svg')">.svg</div>
+                        </div>
+                        <input type="hidden" id="fileExt" value="html">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Operation -->
+            <div class="side-row" style="margin-top: 5px;">
+                <input type="file" id="fileInput" hidden>
+                <button id="saveBtn" class="btn btn-glow" style="width: 100%; height: 45px; font-size: 14px;"><i class="fa-solid fa-download"></i> Download File</button>
+            </div>
+        </footer>
+
+        </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast"><i class="fa-solid fa-circle-check" style="color: var(--success)"></i> <span id="toastMsg">Action Complete</span></div>
+
+    <!-- DOWNLOAD MODAL -->
+    <div class="modal-wrap" id="modal">
+        <div class="modal-card">
+            <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 5px;">Confirm Download</h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 25px;">Ready to export your masterpiece?</p>
+            
+            <div class="control-group">
+                <label class="label">File Preview</label>
+                <div style="font-family: var(--font-code); font-size: 14px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; border: 1px dashed var(--glass-border);">
+                    <span id="finalName">untitled.txt</span> <span style="float: right; opacity: 0.5;" id="finalSize">0 KB</span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="closeModal()" class="btn btn-ghost" style="flex: 1;">Cancel</button>
+                <button onclick="processDownload()" class="btn btn-glow" style="flex: 1;">Save Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CLEAR CONFIRMATION MODAL -->
+    <div class="modal-wrap" id="clearModal">
+        <div class="modal-card" style="border-color: rgba(244, 63, 94, 0.3);">
+            <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 5px; color: var(--danger);">Clear Everything?</h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 25px;">This action will permanently delete your current progress. Are you sure?</p>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="closeClearModal()" class="btn btn-ghost" style="flex: 1;">Keep it</button>
+                <button onclick="confirmClear()" class="btn btn-glow" style="background: var(--danger); box-shadow: 0 0 15px rgba(244, 63, 94, 0.4); flex: 1;">Yes, Clear</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const themeToggle = document.getElementById('themeToggle');
-        const themeIcon = document.getElementById('themeIcon');
-        const body = document.body;
+        // --- AJ CORE LOGIC (v3.5) ---
 
-        // Check for saved theme
-        if (localStorage.getItem('theme') === 'light') {
-            body.classList.add('light-mode');
-            themeIcon.textContent = '☀️';
-        }
-
-        themeToggle.addEventListener('click', () => {
-            body.classList.toggle('light-mode');
-            const isLight = body.classList.contains('light-mode');
-            
-            // Update Icon
-            themeIcon.textContent = isLight ? '☀️' : '🌙';
-            
-            // Save preference
-            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        // Element Selectors
+        const editor = document.getElementById('editor');
+        const sidebar = document.getElementById('sidebar');
+        const scrollbar = document.getElementById('custom-scrollbar');
+        const thumb = scrollbar.querySelector('.thumb');
+        
+        // Auto-Init
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState(); // Auto-load content
+            updateStats();
         });
 
-        const textContent = document.getElementById('textContent');
-        const fileName = document.getElementById('fileName');
-        const formatSelect = document.getElementById('formatSelect');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const form = document.getElementById('textForm');
-        const clearBtn = document.getElementById('clearBtn');
-        const uploadBtn = document.getElementById('uploadBtn');
-        const fileInput = document.getElementById('fileInput');
-        const charCount = document.getElementById('charCount');
-        const copyBtn = document.getElementById('copyBtn');
+        // 1. Theme Engine
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            document.getElementById('themeIcon').className = isLight ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+            localStorage.setItem('tf_theme', isLight ? 'light' : 'dark');
+        }
+        
+        if(localStorage.getItem('tf_theme') === 'light') toggleTheme();
 
-        // File Upload Logic
-        uploadBtn.addEventListener('click', () => fileInput.click());
+        // 2. Editor Interaction & Stats
+        editor.addEventListener('input', () => {
+            updateStats();
+            updateScrollbar();
+            saveState(); // Auto-save logic
+        });
 
-        fileInput.addEventListener('change', function(e) {
+        function updateStats() {
+            const text = editor.value;
+            const lines = text.split('\n').length;
+            const chars = text.length;
+            document.getElementById('stats').innerText = `${lines} LINES | ${chars} CHARS`;
+            
+            // Toggle Empty State Visibility
+            const emptyState = document.getElementById('emptyState');
+            if (text.trim().length > 0) {
+                emptyState.style.opacity = '0';
+                emptyState.style.pointerEvents = 'none';
+            } else {
+                emptyState.style.opacity = '1';
+                emptyState.style.pointerEvents = 'auto';
+            }
+        }
+
+        // 3. Local Storage Persistence (New Feature)
+        function saveState() {
+            localStorage.setItem('tf_content', editor.value);
+            localStorage.setItem('tf_filename', document.getElementById('fileName').value);
+        }
+
+        function loadState() {
+            const savedContent = localStorage.getItem('tf_content');
+            const savedName = localStorage.getItem('tf_filename');
+            if(savedContent) editor.value = savedContent;
+            if(savedName) document.getElementById('fileName').value = savedName;
+        }
+
+        // 4. File I/O Logic
+        document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
-            if (!file) return;
-
+            if(!file) return;
+            
             const reader = new FileReader();
-            reader.onload = function(event) {
-                textContent.value = event.target.result;
-                const nameWithoutExt = file.name.split('.').slice(0, -1).join('.');
-                if (nameWithoutExt) fileName.value = nameWithoutExt;
+            reader.onload = (e) => {
+                editor.value = e.target.result;
+                const nameParts = file.name.split('.');
+                if(nameParts.length > 1) document.getElementById('fileExt').value = nameParts.pop();
+                document.getElementById('fileName').value = nameParts.join('.');
+                showToast(`File loaded: ${file.name}`);
                 updateStats();
             };
             reader.readAsText(file);
         });
 
-        // --- Universal Copy Logic by AJ (Works on HTTP & HTTPS) ---
-        function copyToClipboard(text) {
-            return new Promise((resolve, reject) => {
-                if (navigator.clipboard && window.isSecureContext) {
-                    // Modern API (HTTPS only)
-                    navigator.clipboard.writeText(text).then(resolve).catch(reject);
-                } else {
-                    // Fallback: Hidden Textarea (Works everywhere)
-                    let textArea = document.createElement("textarea");
-                    textArea.value = text;
-                    textArea.style.position = "fixed";
-                    textArea.style.left = "-999999px";
-                    textArea.style.top = "-999999px";
+        // Download Flow
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            if(!editor.value.trim()) { showToast("Editor is empty!", true); return; }
+            
+            const name = document.getElementById('fileName').value || 'untitled';
+            const ext = document.getElementById('fileExt').value;
+            const size = new Blob([editor.value]).size;
+            
+            document.getElementById('finalName').innerText = `${name}.${ext}`;
+            document.getElementById('finalSize').innerText = size < 1024 ? `${size} B` : `${(size/1024).toFixed(1)} KB`;
+            
+            document.getElementById('modal').classList.add('active');
+        });
+
+        function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+        function processDownload() {
+            const content = editor.value;
+            const name = document.getElementById('fileName').value || 'untitled';
+            const ext = document.getElementById('fileExt').value;
+            const filename = `${name}.${ext}`;
+            
+            const blob = new Blob([content], {type: 'text/plain'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+            
+            closeModal();
+            showToast("File Downloaded Successfully!");
+        }
+
+        // 5. Utilities (Copy, Clear, Search, Toast)
+        function showToast(msg, isError = false) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            t.querySelector('i').className = isError ? "fa-solid fa-circle-exclamation" : "fa-solid fa-circle-check";
+            t.querySelector('i').style.color = isError ? "var(--danger)" : "var(--success)";
+            
+            t.classList.add('visible');
+            setTimeout(() => t.classList.remove('visible'), 3000);
+        }
+
+        async function copyContent() {
+            if(!editor.value) return;
+            try {
+                // Primary Method
+                await navigator.clipboard.writeText(editor.value);
+                showToast("Copied to Clipboard");
+            } catch(e) {
+                // Fallback Method for older/non-HTTPS browsers
+                try {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = editor.value;
                     document.body.appendChild(textArea);
-                    textArea.focus();
                     textArea.select();
-                    try {
-                        document.execCommand('copy');
-                        textArea.remove();
-                        resolve();
-                    } catch (error) {
-                        textArea.remove();
-                        reject(error);
-                    }
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showToast("Copied (Legacy)");
+                } catch (err) {
+                    showToast("Copy Failed", true);
                 }
-            });
-        }
-
-        copyBtn.addEventListener('click', function() {
-            const text = textContent.value;
-            if (!text.trim()) {
-                copyBtn.style.animation = 'shake 0.4s';
-                setTimeout(() => copyBtn.style.animation = '', 400);
-                return;
             }
+        }
 
-            copyToClipboard(text).then(() => {
-                const originalHTML = copyBtn.innerHTML;
-                const originalBg = copyBtn.style.background;
-                const originalColor = copyBtn.style.color;
+        function clearContent() {
+            if(editor.value.length < 1) return;
+            document.getElementById('clearModal').classList.add('active');
+        }
 
-                copyBtn.innerHTML = '<span>✅ Copied!</span>';
-                copyBtn.style.background = 'rgba(79, 70, 229, 0.15)';
-                copyBtn.style.borderColor = 'var(--accent-color)';
-                copyBtn.style.color = 'var(--accent-color)';
+        function closeClearModal() { document.getElementById('clearModal').classList.remove('active'); }
 
-                setTimeout(() => {
-                    copyBtn.innerHTML = originalHTML;
-                    copyBtn.style.background = originalBg;
-                    copyBtn.style.borderColor = 'var(--border-color)';
-                    copyBtn.style.color = originalColor || 'var(--text-main)';
-                }, 2000);
-            }).catch(err => {
-                alert("Error: Could not copy text.");
+        // CYBER PICKER LOGIC
+        function toggleExtList() {
+            document.getElementById('extList').classList.toggle('show');
+            const icon = document.querySelector('.select-trigger i');
+            icon.style.transform = document.getElementById('extList').classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        function selectExt(val) {
+            document.getElementById('fileExt').value = val;
+            document.getElementById('selectedExt').innerText = '.' + val;
+            
+            // Update Active UI
+            document.querySelectorAll('.option-item').forEach(opt => {
+                opt.classList.remove('active');
+                if(opt.innerText === '.' + val) opt.classList.add('active');
             });
-        });
-
-        // Clear Logic
-        clearBtn.addEventListener('click', () => {
-            if(confirm("Are you sure you want to clear everything?")) {
-                textContent.value = '';
-                updateStats();
-            }
-        });
-
-        // Stats Update
-        function updateStats() {
-            const text = textContent.value;
-            charCount.textContent = `Characters: ${text.length} | Lines: ${text.split('\n').length}`;
-        }
-        textContent.addEventListener('input', updateStats);
-
-        const downloadModal = document.getElementById('downloadModal');
-        const modalFileName = document.getElementById('modalFileName');
-        const fileSizeText = document.getElementById('fileSizeText');
-        const confirmDownload = document.getElementById('confirmDownload');
-        const closeModal = document.getElementById('closeModal');
-
-        // Function to calculate size
-        function getReadableFileSize(string) {
-            const bytes = new Blob([string]).size;
-            if (bytes < 1024) return bytes + " B";
-            return (bytes / 1024).toFixed(1) + " KB";
+            
+            toggleExtList();
+            saveState();
         }
 
-        // Intercept Form Submit to show Modal
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (!textContent.value.trim()) return alert('Please enter some content!');
-            
-            // Fill Modal Data
-            modalFileName.value = fileName.value.trim();
-            fileSizeText.textContent = getReadableFileSize(textContent.value);
-            
-            // Show Modal
-            downloadModal.style.display = 'flex';
-        });
-
-        // Actual Download from Modal
-        confirmDownload.addEventListener('click', () => {
-            const text = textContent.value;
-            const name = modalFileName.value.trim() || "untitled";
-            const format = formatSelect.value;
-
-            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${name}.${format}`;
-            a.click();
-            window.URL.revokeObjectURL(url);
-
-            downloadModal.style.display = 'none';
-            
-            // Show Success on Main Button
-            const originalBtn = downloadBtn.innerHTML;
-            downloadBtn.innerHTML = '<span>Success!</span>';
-            downloadBtn.style.background = '#10b981';
-            setTimeout(() => {
-                downloadBtn.innerHTML = originalBtn;
-                downloadBtn.style.background = 'var(--accent-color)';
-            }, 2000);
-        });
-
-        closeModal.addEventListener('click', () => {
-            downloadModal.style.display = 'none';
-        });
-
-        // Close on click outside
+        // Close when clicking outside
         window.addEventListener('click', (e) => {
-            if (e.target == downloadModal) downloadModal.style.display = 'none';
-        });
-
-        // Search Logic
-        document.getElementById('searchBtn').addEventListener('click', () => {
-            const val = document.getElementById('searchInput').value;
-            const content = textContent.value;
-            if(val && content.includes(val)){
-                const index = content.indexOf(val);
-                textContent.focus();
-                textContent.setSelectionRange(index, index + val.length);
-            } else {
-                alert("Not found in editor");
+            if (!e.target.closest('.custom-select-wrapper')) {
+                document.getElementById('extList').classList.remove('show');
+                document.querySelector('.select-trigger i').style.transform = 'rotate(0deg)';
             }
         });
 
-        // --- Butter Smooth Draggable Scroll Logic by AJ ---
-        const track = document.getElementById('scrollTrack');
-        const handle = document.getElementById('scrollHandle');
-        let isDragging = false;
-        let handleOffset = 0;
-
-        function updateHandle() {
-            if (isDragging) return; // खीचते समय ऑटो-अपडेट रोकें
-            const scrollableHeight = textContent.scrollHeight - textContent.clientHeight;
-            if (scrollableHeight <= 0) {
-                handle.style.display = 'none';
-                return;
-            }
-            handle.style.display = 'block';
-            const scrollRatio = textContent.scrollTop / scrollableHeight;
-            const maxTop = track.clientHeight - handle.clientHeight;
-            handle.style.top = (scrollRatio * maxTop) + 'px';
-            
-            const handleHeight = Math.max(40, (textContent.clientHeight / textContent.scrollHeight) * track.clientHeight);
-            handle.style.height = handleHeight + 'px';
+        function confirmClear() {
+            closeClearModal();
+            editor.value = '';
+            updateStats();
+            updateScrollbar();
+            saveState();
+            showToast("Editor Cleared");
         }
 
-        const dragStart = (e) => {
-            isDragging = true;
-            handle.classList.add('active');
-            const pageY = (e.pageY || e.touches[0].pageY);
-            const handleRect = handle.getBoundingClientRect();
-            handleOffset = pageY - handleRect.top; // हैंडल में कहाँ क्लिक किया
-            document.body.style.userSelect = 'none';
-        };
+        function toggleSearch() {
+            const input = document.getElementById('searchInput');
+            // If box is open and has text, search first!
+            if (input.classList.contains('active') && input.value.trim() !== "") {
+                findText();
+            } else {
+                input.classList.toggle('active');
+                if(input.classList.contains('active')) input.focus();
+            }
+        }
 
-        const dragging = (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
-            const pageY = (e.pageY || e.touches[0].pageY);
-            const trackRect = track.getBoundingClientRect();
+        function findText() {
+            const query = document.getElementById('searchInput').value;
+            const text = editor.value;
+            if(!query || !text.includes(query)) { showToast("Not found", true); return; }
             
-            let newTop = pageY - trackRect.top - handleOffset;
-            const maxTop = track.clientHeight - handle.clientHeight;
+            const idx = text.indexOf(query);
             
-            // Constrain within track
-            newTop = Math.max(0, Math.min(newTop, maxTop));
-            handle.style.top = newTop + 'px';
+            // Execute focus and selection
+            editor.focus();
+            editor.setSelectionRange(idx, idx + query.length);
 
-            // Calculate scroll target
-            const scrollPercentage = newTop / maxTop;
-            const scrollTarget = scrollPercentage * (textContent.scrollHeight - textContent.clientHeight);
+            // High Precision Centering
+            const styles = window.getComputedStyle(editor);
+            const lineHeight = parseFloat(styles.lineHeight);
+            const paddingTop = parseFloat(styles.paddingTop);
+            const linesBefore = text.substr(0, idx).split('\n').length;
+
+            // Math to put selection in the absolute center
+            const scrollTarget = (linesBefore * lineHeight) + paddingTop - (editor.clientHeight / 2) + (lineHeight / 2);
             
-            // RequestAnimationFrame for smooth rendering
-            requestAnimationFrame(() => {
-                textContent.scrollTop = scrollTarget;
+            editor.scrollTo({
+                top: scrollTarget,
+                behavior: 'smooth'
             });
-        };
+            
+            showToast("Found & Focused");
+        }
 
-        const dragEnd = () => {
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+            // Close sidebar when clicking outside on mobile
+            if(sidebar.classList.contains('open')) {
+                document.addEventListener('click', closeSidebarOutside);
+            }
+        }
+        function closeSidebarOutside(e) {
+            if(!sidebar.contains(e.target) && !e.target.classList.contains('mobile-menu-btn')) {
+                sidebar.classList.remove('open');
+                document.removeEventListener('click', closeSidebarOutside);
+            }
+        }
+
+        // 6. Smooth Scrollbar Logic (The "Butter" Feel)
+        let isDragging = false;
+        let startY, startScrollTop;
+
+        function updateScrollbar() {
+            if(isDragging) return;
+            const { scrollTop, scrollHeight, clientHeight } = editor;
+            if(scrollHeight <= clientHeight) { thumb.style.height = '0px'; return; }
+            
+            const thumbHeight = Math.max((clientHeight / scrollHeight) * clientHeight, 40);
+            const maxTop = clientHeight - thumbHeight;
+            const scrollPercent = scrollTop / (scrollHeight - clientHeight);
+            
+            thumb.style.height = `${thumbHeight}px`;
+            thumb.style.transform = `translateY(${scrollPercent * maxTop}px)`;
+        }
+
+        thumb.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            thumb.classList.add('active');
+            startY = e.clientY;
+            startScrollTop = editor.scrollTop;
+            document.body.style.userSelect = 'none'; // Prevent text selection
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if(!isDragging) return;
+            const deltaY = e.clientY - startY;
+            const { scrollHeight, clientHeight } = editor;
+            const thumbHeight = parseFloat(thumb.style.height);
+            const maxTop = clientHeight - thumbHeight;
+            
+            // Calculate movement ratio
+            const ratio = deltaY / maxTop;
+            editor.scrollTop = startScrollTop + (ratio * (scrollHeight - clientHeight));
+            
+            // Visual update directly for lag-free feel
+            requestAnimationFrame(updateScrollbar);
+        });
+
+        document.addEventListener('mouseup', () => {
             isDragging = false;
-            handle.classList.remove('active');
-            document.body.style.userSelect = 'auto';
-        };
+            thumb.classList.remove('active');
+            document.body.style.userSelect = '';
+        });
 
-        handle.addEventListener('mousedown', dragStart);
-        handle.addEventListener('touchstart', dragStart, {passive: false});
-        window.addEventListener('mousemove', dragging);
-        window.addEventListener('touchmove', dragging, {passive: false});
-        window.addEventListener('mouseup', dragEnd);
-        window.addEventListener('touchend', dragEnd);
-
-        textContent.addEventListener('scroll', updateHandle);
-        window.addEventListener('resize', updateHandle);
-        textContent.addEventListener('input', updateHandle);
+        editor.addEventListener('scroll', () => { if(!isDragging) requestAnimationFrame(updateScrollbar); });
+        window.addEventListener('resize', updateScrollbar);
         
-        setTimeout(updateHandle, 500);
     </script>
 </body>
 </html>
