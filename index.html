@@ -491,10 +491,16 @@
         if(localStorage.getItem('tf_theme') === 'light') toggleTheme();
 
         // 2. Editor Interaction & Stats
+        let inputDebounceTimer;
         editor.addEventListener('input', () => {
-            updateStats();
-            updateScrollbar();
-            saveState(); // Auto-save logic
+            updateScrollbar(); // Scrollbar UI तुरंत अपडेट होना चाहिए
+            
+            // भारी काम (Stats और Saving) को Debounce किया ताकि बड़े पेस्ट पर ब्राउज़र फ्रीज न हो
+            clearTimeout(inputDebounceTimer);
+            inputDebounceTimer = setTimeout(() => {
+                updateStats();
+                saveState(); // Auto-save logic
+            }, 300);
         });
 
         function updateStats() {
@@ -516,8 +522,14 @@
 
         // 3. Local Storage Persistence (New Feature)
         function saveState() {
-            localStorage.setItem('tf_content', editor.value);
-            localStorage.setItem('tf_filename', document.getElementById('fileName').value);
+            try {
+                localStorage.setItem('tf_content', editor.value);
+                localStorage.setItem('tf_filename', document.getElementById('fileName').value);
+            } catch (error) {
+                console.warn("Local Storage Full! Cannot auto-save.");
+                // 5MB से ऊपर का डेटा होने पर Local Storage एरर देता है
+                showToast("File too large for Auto-Save", true);
+            }
         }
 
         function loadState() {
