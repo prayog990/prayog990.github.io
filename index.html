@@ -76,7 +76,8 @@
             gap: 12px;
             z-index: 150;
             height: auto;
-            min-height: 200px;
+            flex-shrink: 0;
+            padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
             overflow: visible;
         }
 
@@ -163,8 +164,8 @@
             display: flex;
             flex-direction: column;
             background: rgba(0,0,0,0.05);
-            height: 60vh;
-            height: 60dvh;
+            flex: 1;
+            min-height: 0;
             --sb-h: 0px;
         }
 
@@ -349,11 +350,6 @@
 
             <div id="emptyState" class="empty-state-container">
                 <div class="empty-state-text">// Paste text Here</div>
-                <div style="color: var(--text-muted); font-size: 12px; font-family: var(--font-code);">or</div>
-                <div class="upload-trigger-btn" onclick="document.getElementById('fileInput').click()">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <span>Upload File</span>
-                </div>
             </div>
 
             <div id="custom-scrollbar"><div class="thumb"></div></div>
@@ -361,7 +357,8 @@
 
         <!-- DASHBOARD -->
         <footer class="sidebar" id="sidebar">
-            <div class="side-row" style="justify-content: flex-end;">
+            <div class="side-row" style="justify-content: space-between;">
+                <button class="btn btn-ghost" style="height: 38px; padding: 0 16px;" onclick="document.getElementById('fileInput').click()" aria-label="Upload file"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--accent);"></i> Upload File</button>
                 <span id="stats" style="font-size: 10px; font-weight: 700; opacity: 0.6; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--glass-border); white-space: nowrap;">Ready</span>
             </div>
 
@@ -489,13 +486,30 @@
         }
 
         function restore(entry) {
-            editor.value = entry.v;
-            editor.setSelectionRange(entry.s, entry.e);
+            const old = editor.value, nv = entry.v, st = editor.scrollTop;
+            // old aur new text ke beech pehla/aakhri badla hua hissa dhundo
+            const max = Math.min(old.length, nv.length);
+            let p = 0;
+            while (p < max && old.charCodeAt(p) === nv.charCodeAt(p)) p++;
+            let q = 0;
+            while (q < max - p && old.charCodeAt(old.length - 1 - q) === nv.charCodeAt(nv.length - 1 - q)) q++;
+
+            editor.value = nv;
+            editor.setSelectionRange(p, nv.length - q);
+            editor.scrollTop = st;            // scroll bilkul wahi rahe, koi jump nahi
+            keepInView(p);                    // sirf tab scroll jab badlav screen se bahar ho
             updateStats();
             updateScrollbar();
             saveState();
-            reveal(entry.s, false);
+            refreshCount();                   // search status turant update
             updateHistBtns();
+        }
+
+        function keepInView(idx) {
+            const top = caretTop(idx);
+            const lh = parseFloat(getComputedStyle(editor).lineHeight) || 24;
+            const view = editor.clientHeight, st = editor.scrollTop;
+            if (top < st || top + lh > st + view) editor.scrollTop = Math.max(0, top - view / 3);
         }
 
         function undo() {
@@ -598,33 +612,156 @@
             const ext = document.getElementById('fileExt').value;
             const size = new Blob([editor.value]).size;
             document.getElementById('finalName').innerText = `${name}.${ext}`;
-            document.getElementById('finalSize').innerText = size < 1024 ? `${size} B` : `${(size / 1024).toFixed(1)} KB`;
+            document.getElementById('finalSize').innerText = ext === 'pdf' ? 'A4 PDF' : (size < 1024 ? `${size} B` : `${(size / 1024).toFixed(1)} KB`);
             document.getElementById('modal').classList.add('active');
         });
 
         function closeModal() { document.getElementById('modal').classList.remove('active'); }
 
-        function processDownload() {
-            const name = document.getElementById('fileName').value || 'untitled';
-            const ext = document.getElementById('fileExt').value;
-            const blob = new Blob([editor.value], { type: 'text/plain' });
+        function saveBlob(blob, filename) {
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `${name}.${ext}`;
+            link.download = filename;
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+        }
+
+        let pdfBusy = false;
+        async function processDownload() {
+            if (pdfBusy) return;
+            const name = document.getElementById('fileName').value || 'untitled';
+            const ext = document.getElementById('fileExt').value;
             closeModal();
+            let blob;
+            if (ext === 'pdf') {
+                pdfBusy = true;
+                showToast("PDF ban rahi hai, thoda wait karo...", false, 60000);
+                try {
+                    blob = await buildPdf(editor.value);
+                } catch (err) {
+                    console.error(err);
+                    pdfBusy = false;
+                    showToast("PDF nahi ban payi, dobara try karo", true);
+                    return;
+                }
+                pdfBusy = false;
+            } else {
+                blob = new Blob([editor.value], { type: 'text/plain' });
+            }
+            saveBlob(blob, `${name}.${ext}`);
             showToast("File Downloaded Successfully!");
         }
 
+        // --- PDF ENGINE ---
+        // Text ko browser ke apne renderer se page-images mein draw karta hai (Hindi/Devanagari ke matras sahi rehte hain),
+        // phir unhe ek asli PDF file mein pack karta hai. Koi external library nahi chahiye.
+        async function buildPdf(text) {
+            if (document.fonts && document.fonts.ready) await document.fonts.ready;
+
+            const PW = 595, PH = 842, S = 2;                  // A4 (points), 2 pixel per point
+            const W = PW * S, H = PH * S, M = 54 * S;         // canvas size aur margin
+            const FS = 22, LH = 38;                           // 11pt font, line height
+            const FONT = `${FS}px "Noto Sans Devanagari","Noto Sans","Nirmala UI","Segoe UI",Roboto,Arial,sans-serif`;
+
+            const cv = document.createElement('canvas');
+            cv.width = W; cv.height = H;
+            const ctx = cv.getContext('2d');
+            ctx.font = FONT;
+            const maxW = W - 2 * M;
+
+            const graphemes = (s) => (typeof Intl !== 'undefined' && Intl.Segmenter)
+                ? Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(s), x => x.segment)
+                : Array.from(s);
+
+            // 1) Lines mein todo (word wrap)
+            const lines = [];
+            const paras = text.replace(/\r\n?/g, '\n').replace(/\t/g, '    ').split('\n');
+            for (const p of paras) {
+                if (!p.trim()) { lines.push(''); continue; }
+                let cur = '';
+                for (const w of p.split(' ')) {
+                    const test = cur ? cur + ' ' + w : w;
+                    if (ctx.measureText(test).width <= maxW) { cur = test; continue; }
+                    if (cur) { lines.push(cur); cur = ''; }
+                    if (ctx.measureText(w).width <= maxW) { cur = w; continue; }
+                    let part = '';                             // bahut lamba word: akshar-akshar karke todo
+                    for (const g of graphemes(w)) {
+                        if (part && ctx.measureText(part + g).width > maxW) { lines.push(part); part = g; }
+                        else part += g;
+                    }
+                    cur = part;
+                }
+                lines.push(cur);
+            }
+
+            const perPage = Math.floor((H - 2 * M) / LH);
+            const total = Math.max(1, Math.ceil(lines.length / perPage));
+
+            // 2) Har page ko draw karke JPEG banao
+            const jpgs = [];
+            for (let p = 0; p < total; p++) {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, W, H);
+                ctx.fillStyle = '#111111';
+                ctx.font = FONT;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
+                lines.slice(p * perPage, (p + 1) * perPage).forEach((ln, i) => {
+                    if (ln) ctx.fillText(ln, M, M + i * LH + LH * 0.7);
+                });
+                ctx.fillStyle = '#888888';
+                ctx.font = '18px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${p + 1} / ${total}`, W / 2, H - 48);
+
+                const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.85));
+                jpgs.push(new Uint8Array(await blob.arrayBuffer()));
+                await new Promise(r => setTimeout(r, 0));      // UI freeze na ho
+            }
+
+            // 3) PDF file jodo
+            const enc = new TextEncoder();
+            const parts = [], offs = [];
+            let pos = 0;
+            const add = (d) => { const u = typeof d === 'string' ? enc.encode(d) : d; parts.push(u); pos += u.length; };
+            const obj = (id, body) => { offs[id] = pos; add(`${id} 0 obj\n${body}\nendobj\n`); };
+
+            add('%PDF-1.4\n%\u00e2\u00e3\u00cf\u00d3\n');
+            const pageIds = jpgs.map((_, k) => 5 + 3 * k);
+            obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+            obj(2, `<< /Type /Pages /Kids [${pageIds.map(i => i + ' 0 R').join(' ')}] /Count ${total} >>`);
+
+            jpgs.forEach((jpg, k) => {
+                const imgId = 3 + 3 * k, contId = 4 + 3 * k, pageId = 5 + 3 * k;
+                offs[imgId] = pos;
+                add(`${imgId} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${W} /Height ${H} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`);
+                add(jpg);
+                add('\nendstream\nendobj\n');
+                const cs = `q ${PW} 0 0 ${PH} 0 0 cm /Im0 Do Q`;
+                obj(contId, `<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`);
+                obj(pageId, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /XObject << /Im0 ${imgId} 0 R >> >> /Contents ${contId} 0 R >>`);
+            });
+
+            const size = 3 * total + 3;
+            const xpos = pos;
+            let xref = `xref\n0 ${size}\n0000000000 65535 f \n`;
+            for (let id = 1; id < size; id++) xref += String(offs[id]).padStart(10, '0') + ' 00000 n \n';
+            add(xref + `trailer\n<< /Size ${size} /Root 1 0 R >>\nstartxref\n${xpos}\n%%EOF`);
+
+            return new Blob(parts, { type: 'application/pdf' });
+        }
+
         // 6. Utilities
-        function showToast(msg, isError = false) {
+        function showToast(msg, isError = false, ms = 3000) {
             const t = document.getElementById('toast');
             document.getElementById('toastMsg').innerText = msg;
             t.querySelector('i').className = isError ? "fa-solid fa-circle-exclamation" : "fa-solid fa-circle-check";
             t.querySelector('i').style.color = isError ? "var(--danger)" : "var(--success)";
             t.classList.add('visible');
             clearTimeout(showToast._t);
-            showToast._t = setTimeout(() => t.classList.remove('visible'), 3000);
+            showToast._t = setTimeout(() => t.classList.remove('visible'), ms);
         }
 
         async function copyContent() {
@@ -739,9 +876,13 @@
 
         function refreshCount(cur) {
             if (!searchInput.value) { setInfo('0'); return; }
-            const n = getMatches().length;
-            if (!n) setInfo('0/0', true);
-            else setInfo(cur ? `${cur}/${n}` : `${n} mile`);
+            const ms = getMatches(), n = ms.length;
+            if (!n) { setInfo('0/0', true); return; }
+            if (!cur && isSelectionMatch()) {
+                const k = ms.findIndex(m => m.i === editor.selectionStart);
+                if (k >= 0) cur = k + 1;
+            }
+            setInfo(cur ? `${cur}/${n}` : `${n} mile`);
         }
 
         // Caret ki vertical position nikalne ke liye hidden mirror (wrapped Hindi text ke liye sahi)
