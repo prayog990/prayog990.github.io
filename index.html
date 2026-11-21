@@ -1,17 +1,14 @@
-<!-- FILE: Text to File v3.5.0 (AJ Creative Edition) -->
+<!-- FILE: Text to File v3.6.0 (AJ Creative Edition) — Search fix + Undo/Redo -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TextForge v3.5 by AJ</title>
-    
-    <!-- Pro Fonts -->
+    <title>TextForge v3.6 by AJ</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
-    
-    <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -42,7 +39,7 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-        
+
         body {
             background-color: var(--bg-deep);
             background-image: var(--bg-gradient);
@@ -51,22 +48,23 @@
             color: var(--text-main);
             font-family: var(--font-ui);
             height: 100vh;
+            height: 100dvh;
             overflow: hidden;
             transition: all 0.5s ease;
         }
 
         @keyframes bgMove { 0% {background-position:0% 50%} 50% {background-position:100% 50%} 100% {background-position:0% 50%} }
+        @media (prefers-reduced-motion: reduce) { body { animation: none; } }
 
-        /* --- UI CONTAINER --- */
         .app-grid {
             display: flex;
             flex-direction: column;
             height: 100vh;
+            height: 100dvh;
             position: relative;
             overflow: hidden;
         }
 
-        /* --- DASHBOARD PANEL (3-Row Structure) --- */
         .sidebar {
             background: var(--glass-panel);
             backdrop-filter: blur(20px);
@@ -78,23 +76,11 @@
             gap: 12px;
             z-index: 150;
             height: auto;
-            min-height: 220px;
+            min-height: 200px;
             overflow: visible;
         }
 
         .side-row { display: flex; align-items: center; gap: 10px; width: 100%; }
-        
-        /* Search Box Animation */
-        #searchInput { 
-            width: 0; padding: 0; border: none; opacity: 0; 
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-        }
-        #searchInput.active { 
-            width: 100%; padding: 10px 14px; opacity: 1; 
-            border: 1px solid var(--glass-border);
-        }
-
-        .sidebar .label { margin-bottom: 4px; font-size: 9px; }
 
         .logo {
             font-size: 22px;
@@ -102,10 +88,8 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 20px;
             letter-spacing: -0.5px;
         }
-        
         .logo i { color: var(--accent); filter: drop-shadow(0 0 8px var(--accent)); }
 
         .control-group { margin-bottom: 15px; }
@@ -125,10 +109,14 @@
             font-size: 13px;
             transition: 0.3s;
         }
-        
         body.light-mode .cyber-input { background: rgba(255,255,255,0.5); }
+        .cyber-input:focus {
+            border-color: var(--accent);
+            box-shadow: var(--accent-glow);
+            background: rgba(0,0,0,0.4);
+        }
 
-        /* CUSTOM DROPDOWN UI */
+        /* CUSTOM DROPDOWN */
         .custom-select-wrapper { position: relative; user-select: none; z-index: 2000; }
         .select-trigger { display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1px solid var(--glass-border); }
         .custom-options {
@@ -141,64 +129,81 @@
             box-shadow: 0 10px 50px rgba(0,0,0,0.8);
         }
         .custom-options.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
-        .option-item { 
-            padding: 12px 16px; font-family: var(--font-code); font-size: 13px; 
+        .option-item {
+            padding: 12px 16px; font-family: var(--font-code); font-size: 13px;
             cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: space-between;
         }
         .option-item:hover { background: rgba(99, 102, 241, 0.15); color: var(--accent); }
         .option-item.active { background: var(--accent); color: white; }
-        
         .custom-options::-webkit-scrollbar { width: 4px; }
         .custom-options::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
 
-        .cyber-input:focus {
-            border-color: var(--accent);
-            box-shadow: var(--accent-glow);
-            background: rgba(0,0,0,0.4);
-        }
-
-        /* --- BUTTONS --- */
+        /* BUTTONS */
         .btn {
             cursor: pointer; padding: 10px; border-radius: 8px; border: none;
             font-size: 13px; font-weight: 600; transition: all 0.2s;
             display: flex; align-items: center; justify-content: center; gap: 8px;
         }
-        
-        .btn-glow {
-            background: var(--accent); color: white;
-            box-shadow: var(--accent-glow);
-        }
+        .btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+        .btn-glow { background: var(--accent); color: white; box-shadow: var(--accent-glow); }
         .btn-glow:hover { transform: translateY(-2px); box-shadow: 0 0 25px var(--accent); }
         .btn-glow:active { transform: scale(0.96); }
-
         .btn-ghost {
             background: rgba(255,255,255,0.05); color: var(--text-main);
             border: 1px solid var(--glass-border);
         }
         .btn-ghost:hover { background: rgba(255,255,255,0.1); border-color: var(--text-muted); }
+        .btn-ghost.on { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-        /* --- EDITOR AREA --- */
+        .tb-btn { width: 32px; height: 32px; padding: 0; flex-shrink: 0; }
+
+        /* EDITOR */
         .editor-zone {
             position: relative;
             display: flex;
             flex-direction: column;
             background: rgba(0,0,0,0.05);
             height: 60vh;
+            height: 60dvh;
+            --sb-h: 0px;
         }
 
         .toolbar {
             height: 60px;
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 24px;
+            padding: 0 16px;
             border-bottom: 1px solid var(--glass-border);
             background: var(--glass-panel);
             backdrop-filter: blur(10px);
         }
+        .tb-group { display: flex; gap: 6px; align-items: center; }
+
+        /* SEARCH BAR */
+        .searchbar {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--glass-border);
+            background: var(--glass-panel);
+            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+            z-index: 120;
+        }
+        .searchbar.open { display: flex; }
+        .sb-row { display: flex; gap: 6px; align-items: center; }
+        .sb-row .cyber-input { flex: 1; min-width: 0; padding: 8px 12px; }
+        .sb-btn { width: 34px; height: 34px; padding: 0; flex-shrink: 0; font-size: 12px; }
+        .sb-text { height: 34px; padding: 0 12px; flex-shrink: 0; font-size: 12px; }
+        #matchInfo { font-size: 11px; font-weight: 700; color: var(--text-muted); min-width: 44px; text-align: center; font-family: var(--font-code); }
+        #matchInfo.none { color: var(--danger); }
 
         textarea.editor {
             flex: 1;
+            min-height: 0;
             width: 100%;
             background: transparent;
             border: none;
@@ -210,16 +215,13 @@
             resize: none;
             scrollbar-width: none;
         }
-        
-        /* Premium Soft Highlight - Visibility Fixed */
         textarea.editor::selection {
-            background: rgba(99, 102, 241, 0.6) !important; 
+            background: rgba(99, 102, 241, 0.6) !important;
             color: #ffffff !important;
-            text-shadow: 0 0 5px rgba(0,0,0,0.2);
         }
-        textarea.editor::placeholder { opacity: 0; } /* Placeholder को छुपाया ताकि हमारा कस्टम UI दिखे */
+        textarea.editor::placeholder { opacity: 0; }
 
-        /* EMPTY STATE UI */
+        /* EMPTY STATE */
         .empty-state-container {
             position: absolute;
             top: 50%;
@@ -235,15 +237,7 @@
             width: 100%;
             text-align: center;
         }
-        
-        .empty-state-text {
-            font-family: var(--font-code);
-            font-size: 18px;
-            color: var(--text-muted);
-            opacity: 0.5;
-            letter-spacing: 1px;
-        }
-
+        .empty-state-text { font-family: var(--font-code); font-size: 18px; color: var(--text-muted); opacity: 0.5; letter-spacing: 1px; }
         .upload-trigger-btn {
             background: rgba(99, 102, 241, 0.1);
             border: 1px dashed var(--accent);
@@ -257,30 +251,13 @@
             align-items: center;
             gap: 10px;
         }
+        .upload-trigger-btn:hover { background: rgba(99, 102, 241, 0.2); transform: translateY(-5px); box-shadow: var(--accent-glow); }
+        .upload-trigger-btn i { font-size: 30px; color: var(--accent); filter: drop-shadow(0 0 10px var(--accent)); }
+        .upload-trigger-btn span { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-main); }
 
-        .upload-trigger-btn:hover {
-            background: rgba(99, 102, 241, 0.2);
-            transform: translateY(-5px);
-            box-shadow: var(--accent-glow);
-        }
-
-        .upload-trigger-btn i {
-            font-size: 30px;
-            color: var(--accent);
-            filter: drop-shadow(0 0 10px var(--accent));
-        }
-
-        .upload-trigger-btn span {
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-main);
-        }
-
-        /* --- SCROLLBAR --- */
+        /* SCROLLBAR */
         #custom-scrollbar {
-            position: absolute; right: 4px; top: 64px; bottom: 10px; width: 6px;
+            position: absolute; right: 4px; top: calc(64px + var(--sb-h)); bottom: 10px; width: 6px;
             border-radius: 10px; background: transparent; z-index: 100;
         }
         .thumb {
@@ -290,7 +267,7 @@
         #custom-scrollbar:hover .thumb { opacity: 0.8; background: var(--accent); }
         .thumb.active { cursor: grabbing; background: var(--accent); opacity: 1; }
 
-        /* --- MODAL --- */
+        /* MODAL */
         .modal-wrap {
             position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999;
             backdrop-filter: blur(8px); opacity: 0; pointer-events: none;
@@ -298,69 +275,78 @@
             transition: 0.4s;
         }
         .modal-wrap.active { opacity: 1; pointer-events: auto; }
-        
         .modal-card {
             background: var(--bg-deep); border: 1px solid var(--glass-border);
-            width: 400px; padding: 30px; border-radius: 20px;
+            width: 400px; max-width: calc(100vw - 32px); padding: 30px; border-radius: 20px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: translateY(20px);
             transition: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         .modal-wrap.active .modal-card { transform: translateY(0); }
 
-        /* --- TOAST --- */
+        /* TOAST */
         #toast {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
             background: var(--glass-panel); border: 1px solid var(--glass-border);
-            backdrop-filter: blur(12px); padding: 12px 24px; rounded: 50px; border-radius: 50px;
+            backdrop-filter: blur(12px); padding: 12px 24px; border-radius: 50px;
             color: var(--text-main); font-size: 12px; font-weight: 600;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 2000;
             display: flex; align-items: center; gap: 10px; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: calc(100vw - 24px);
         }
         #toast.visible { transform: translateX(-50%) translateY(0); }
 
-        /* --- MOBILE TWEAKS --- */
-        .mobile-menu-btn { display: none; font-size: 20px; color: var(--text-main); cursor: pointer; }
-
         @media (max-width: 768px) {
-            .app-grid { flex-direction: column; }
-            .sidebar { 
-                position: relative; width: 100%; height: 40vh; 
-                transform: none; box-shadow: none; border-top: 1px solid var(--glass-border);
-            }
-            .mobile-menu-btn { display: none; }
-            .toolbar { padding: 0 15px; }
+            .sidebar { position: relative; width: 100%; }
+            .toolbar { padding: 0 12px; }
             textarea.editor { padding: 20px; font-size: 14px; }
             #custom-scrollbar { width: 3px; }
         }
-
+        @media (max-width: 420px) {
+            .logo span { display: none; }
+        }
     </style>
 </head>
 <body>
 
     <div class="app-grid">
         <!-- MAIN EDITOR -->
-        <main class="editor-zone">
-            <!-- Toolbar -->
+        <main class="editor-zone" id="editorZone">
             <div class="toolbar">
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <div class="logo" style="margin-bottom: 0; font-size: 18px;">
-                        <i class="fa-solid fa-cube"></i> TextForge
-                    </div>
+                <div class="logo" style="font-size: 18px;">
+                    <i class="fa-solid fa-cube"></i> <span>TextForge</span>
                 </div>
-                
-                <div style="display: flex; gap: 8px;">
-                    <button onclick="toggleTheme()" class="btn btn-ghost" style="width: 32px; height: 32px; border-radius: 50%; padding:0;">
+
+                <div class="tb-group">
+                    <button id="undoBtn" onclick="undo()" class="btn btn-ghost tb-btn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled><i class="fa-solid fa-rotate-left"></i></button>
+                    <button id="redoBtn" onclick="redo()" class="btn btn-ghost tb-btn" title="Redo (Ctrl+Y)" aria-label="Redo" disabled><i class="fa-solid fa-rotate-right"></i></button>
+                    <button id="searchToggle" onclick="toggleSearch()" class="btn btn-ghost tb-btn" title="Find & Replace (Ctrl+F)" aria-label="Find and replace"><i class="fa-solid fa-magnifying-glass"></i></button>
+                    <button onclick="toggleTheme()" class="btn btn-ghost tb-btn" style="border-radius: 50%;" aria-label="Toggle theme">
                         <i class="fa-solid fa-moon" id="themeIcon"></i>
                     </button>
-                    <button onclick="copyContent()" class="btn btn-ghost" style="width: 32px; height: 32px; padding:0;" title="Copy"><i class="fa-regular fa-copy"></i></button>
-                    <button onclick="clearContent()" class="btn btn-ghost" style="width: 32px; height: 32px; padding:0; color: var(--danger); border-color: rgba(244, 63, 94, 0.3);" title="Clear"><i class="fa-solid fa-trash-can"></i></button>
+                    <button onclick="copyContent()" class="btn btn-ghost tb-btn" title="Copy" aria-label="Copy"><i class="fa-regular fa-copy"></i></button>
+                    <button onclick="clearContent()" class="btn btn-ghost tb-btn" style="color: var(--danger); border-color: rgba(244, 63, 94, 0.3);" title="Clear" aria-label="Clear"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
             </div>
 
-            <!-- TextArea -->
+            <!-- FIND & REPLACE -->
+            <div class="searchbar" id="searchBar">
+                <div class="sb-row">
+                    <input type="text" id="searchInput" class="cyber-input" placeholder="Find..." autocomplete="off" autocapitalize="off" spellcheck="false">
+                    <span id="matchInfo">0</span>
+                    <button class="btn btn-ghost sb-btn" onclick="findNext(-1)" title="Previous (Shift+Enter)" aria-label="Previous match"><i class="fa-solid fa-chevron-up"></i></button>
+                    <button class="btn btn-ghost sb-btn" onclick="findNext(1)" title="Next (Enter)" aria-label="Next match"><i class="fa-solid fa-chevron-down"></i></button>
+                    <button id="caseBtn" class="btn btn-ghost sb-btn" onclick="toggleCase()" title="Match case" aria-label="Match case">Aa</button>
+                    <button class="btn btn-ghost sb-btn" onclick="toggleSearch(false)" title="Close" aria-label="Close search"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="sb-row">
+                    <input type="text" id="replaceInput" class="cyber-input" placeholder="Replace with..." autocomplete="off" autocapitalize="off" spellcheck="false">
+                    <button class="btn btn-ghost sb-text" onclick="replaceOne()">Replace</button>
+                    <button class="btn btn-glow sb-text" onclick="replaceAll()">All</button>
+                </div>
+            </div>
+
             <textarea id="editor" class="editor" spellcheck="false" placeholder="// Start typing your masterpiece..."></textarea>
-            
-            <!-- EMPTY STATE UI -->
+
             <div id="emptyState" class="empty-state-container">
                 <div class="empty-state-text">// Paste text Here</div>
                 <div style="color: var(--text-muted); font-size: 12px; font-family: var(--font-code);">or</div>
@@ -369,23 +355,16 @@
                     <span>Upload File</span>
                 </div>
             </div>
-            
-            <!-- Custom Scrollbar -->
+
             <div id="custom-scrollbar"><div class="thumb"></div></div>
         </main>
 
-        <!-- DASHBOARD (Bottom Panel) -->
+        <!-- DASHBOARD -->
         <footer class="sidebar" id="sidebar">
-            <!-- Row 1: Search & Stats -->
             <div class="side-row" style="justify-content: flex-end;">
-                <input type="text" id="searchInput" class="cyber-input" placeholder="Search code..." onkeyup="if(event.key==='Enter') findText()" style="flex: 1;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <button onclick="toggleSearch()" class="btn btn-ghost" style="width: 38px; height: 38px; padding:0;"><i class="fa-solid fa-magnifying-glass"></i></button>
-                    <span id="stats" style="font-size: 10px; font-weight: 700; opacity: 0.6; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--glass-border); white-space: nowrap;">Ready</span>
-                </div>
+                <span id="stats" style="font-size: 10px; font-weight: 700; opacity: 0.6; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--glass-border); white-space: nowrap;">Ready</span>
             </div>
 
-            <!-- Row 2: File Details -->
             <div class="side-row">
                 <div style="flex: 2;">
                     <label class="label">File Name</label>
@@ -420,16 +399,13 @@
                 </div>
             </div>
 
-            <!-- Row 3: Operation -->
             <div class="side-row" style="margin-top: 5px;">
                 <input type="file" id="fileInput" hidden>
                 <button id="saveBtn" class="btn btn-glow" style="width: 100%; height: 45px; font-size: 14px;"><i class="fa-solid fa-download"></i> Download File</button>
             </div>
         </footer>
+    </div>
 
-        </div>
-
-    <!-- TOAST NOTIFICATION -->
     <div id="toast"><i class="fa-solid fa-circle-check" style="color: var(--success)"></i> <span id="toastMsg">Action Complete</span></div>
 
     <!-- DOWNLOAD MODAL -->
@@ -437,14 +413,12 @@
         <div class="modal-card">
             <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 5px;">Confirm Download</h3>
             <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 25px;">Ready to export your masterpiece?</p>
-            
             <div class="control-group">
                 <label class="label">File Preview</label>
                 <div style="font-family: var(--font-code); font-size: 14px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; border: 1px dashed var(--glass-border);">
                     <span id="finalName">untitled.txt</span> <span style="float: right; opacity: 0.5;" id="finalSize">0 KB</span>
                 </div>
             </div>
-
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button onclick="closeModal()" class="btn btn-ghost" style="flex: 1;">Cancel</button>
                 <button onclick="processDownload()" class="btn btn-glow" style="flex: 1;">Save Now</button>
@@ -452,12 +426,11 @@
         </div>
     </div>
 
-    <!-- CLEAR CONFIRMATION MODAL -->
+    <!-- CLEAR MODAL -->
     <div class="modal-wrap" id="clearModal">
         <div class="modal-card" style="border-color: rgba(244, 63, 94, 0.3);">
             <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 5px; color: var(--danger);">Clear Everything?</h3>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 25px;">This action will permanently delete your current progress. Are you sure?</p>
-            
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 25px;">Saara text hat jayega. Galti se clear ho gaya to Undo button se wapas la sakte ho.</p>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button onclick="closeClearModal()" class="btn btn-ghost" style="flex: 1;">Keep it</button>
                 <button onclick="confirmClear()" class="btn btn-glow" style="background: var(--danger); box-shadow: 0 0 15px rgba(244, 63, 94, 0.4); flex: 1;">Yes, Clear</button>
@@ -466,50 +439,112 @@
     </div>
 
     <script>
-        // --- AJ CORE LOGIC (v3.5) ---
-
-        // Element Selectors
+        // --- AJ CORE LOGIC (v3.6) ---
         const editor = document.getElementById('editor');
-        const sidebar = document.getElementById('sidebar');
         const scrollbar = document.getElementById('custom-scrollbar');
         const thumb = scrollbar.querySelector('.thumb');
-        
-        // Auto-Init
+        const searchInput = document.getElementById('searchInput');
+        const replaceInput = document.getElementById('replaceInput');
+
         window.addEventListener('DOMContentLoaded', () => {
-            loadState(); // Auto-load content
+            loadState();
+            snap();          // pehla history point
             updateStats();
+            updateScrollbar();
         });
 
-        // 1. Theme Engine
+        // 1. Theme
         function toggleTheme() {
             document.body.classList.toggle('light-mode');
             const isLight = document.body.classList.contains('light-mode');
             document.getElementById('themeIcon').className = isLight ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
             localStorage.setItem('tf_theme', isLight ? 'light' : 'dark');
         }
-        
-        if(localStorage.getItem('tf_theme') === 'light') toggleTheme();
+        if (localStorage.getItem('tf_theme') === 'light') toggleTheme();
 
-        // 2. Editor Interaction & Stats
+        // 2. UNDO / REDO HISTORY
+        const hist = { stack: [], i: -1 };
+        let histTimer = null;
+        const BOUNDARY = ['insertFromPaste', 'insertFromDrop', 'deleteByCut', 'deleteByDrag', 'insertReplacementText', 'insertFromYank'];
+
+        function snap() {
+            const v = editor.value;
+            if (hist.i >= 0 && hist.stack[hist.i].v === v) { updateHistBtns(); return; }
+            hist.stack.length = hist.i + 1;                       // redo branch hatao
+            hist.stack.push({ v, s: editor.selectionStart, e: editor.selectionEnd });
+            const cap = Math.min(200, Math.max(5, Math.floor(20000000 / Math.max(v.length, 1))));
+            while (hist.stack.length > cap) hist.stack.shift();   // purane entries hatao (memory safe)
+            hist.i = hist.stack.length - 1;
+            updateHistBtns();
+        }
+
+        function flushHist() {
+            if (histTimer) { clearTimeout(histTimer); histTimer = null; }
+            snap();
+        }
+
+        function updateHistBtns() {
+            document.getElementById('undoBtn').disabled = hist.i <= 0;
+            document.getElementById('redoBtn').disabled = hist.i >= hist.stack.length - 1;
+        }
+
+        function restore(entry) {
+            editor.value = entry.v;
+            editor.setSelectionRange(entry.s, entry.e);
+            updateStats();
+            updateScrollbar();
+            saveState();
+            reveal(entry.s, false);
+            updateHistBtns();
+        }
+
+        function undo() {
+            flushHist();
+            if (hist.i > 0) { hist.i--; restore(hist.stack[hist.i]); }
+        }
+        function redo() {
+            flushHist();
+            if (hist.i < hist.stack.length - 1) { hist.i++; restore(hist.stack[hist.i]); }
+        }
+
+        // Browser ka apna undo history ko bigaadta hai, isliye hum khud handle karte hain
+        editor.addEventListener('beforeinput', (e) => {
+            if (e.inputType === 'historyUndo') { e.preventDefault(); undo(); return; }
+            if (e.inputType === 'historyRedo') { e.preventDefault(); redo(); return; }
+            if (BOUNDARY.includes(e.inputType)) flushHist();      // paste/cut se pehle purani state save
+        });
+
+        document.addEventListener('keydown', (e) => {
+            const mod = e.ctrlKey || e.metaKey;
+            const k = e.key.toLowerCase();
+            const inField = e.target.tagName === 'INPUT';
+            if (mod && k === 'f') { e.preventDefault(); toggleSearch(true); return; }
+            if (mod && k === 's') { e.preventDefault(); document.getElementById('saveBtn').click(); return; }
+            if (e.key === 'Escape') { closeModal(); closeClearModal(); return; }
+            if (inField) return;
+            if (mod && k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+            else if (mod && (k === 'y' || (k === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+        });
+
+        // 3. Editor Interaction & Stats
         let inputDebounceTimer;
-        editor.addEventListener('input', () => {
-            updateScrollbar(); // Scrollbar UI तुरंत अपडेट होना चाहिए
-            
-            // भारी काम (Stats और Saving) को Debounce किया ताकि बड़े पेस्ट पर ब्राउज़र फ्रीज न हो
+        editor.addEventListener('input', (e) => {
+            updateScrollbar();
+            clearTimeout(histTimer);
+            if (BOUNDARY.includes(e.inputType)) { histTimer = null; snap(); }
+            else histTimer = setTimeout(() => { histTimer = null; snap(); }, 600);
+
             clearTimeout(inputDebounceTimer);
             inputDebounceTimer = setTimeout(() => {
                 updateStats();
-                saveState(); // Auto-save logic
+                saveState();
+                if (searchOpen()) refreshCount();
             }, 300);
         });
 
         function updateStats() {
             const text = editor.value;
-            const lines = text.split('\n').length;
-            const chars = text.length;
-            document.getElementById('stats').innerText = `${lines} LINES | ${chars} CHARS`;
-            
-            // Toggle Empty State Visibility
+            document.getElementById('stats').innerText = `${text.split('\n').length} LINES | ${text.length} CHARS`;
             const emptyState = document.getElementById('emptyState');
             if (text.trim().length > 0) {
                 emptyState.style.opacity = '0';
@@ -520,136 +555,132 @@
             }
         }
 
-        // 3. Local Storage Persistence (New Feature)
+        // 4. Local Storage
         function saveState() {
             try {
                 localStorage.setItem('tf_content', editor.value);
                 localStorage.setItem('tf_filename', document.getElementById('fileName').value);
             } catch (error) {
-                console.warn("Local Storage Full! Cannot auto-save.");
-                // 5MB से ऊपर का डेटा होने पर Local Storage एरर देता है
                 showToast("File too large for Auto-Save", true);
             }
         }
-
         function loadState() {
             const savedContent = localStorage.getItem('tf_content');
             const savedName = localStorage.getItem('tf_filename');
-            if(savedContent) editor.value = savedContent;
-            if(savedName) document.getElementById('fileName').value = savedName;
+            if (savedContent) editor.value = savedContent;
+            if (savedName) document.getElementById('fileName').value = savedName;
         }
 
-        // 4. File I/O Logic
-        document.getElementById('fileInput').addEventListener('change', function(e) {
+        // 5. File I/O
+        document.getElementById('fileInput').addEventListener('change', function (e) {
             const file = e.target.files[0];
-            if(!file) return;
-            
+            if (!file) return;
             const reader = new FileReader();
-            reader.onload = (e) => {
-                editor.value = e.target.result;
+            reader.onload = (ev) => {
+                flushHist();
+                editor.value = ev.target.result;
                 const nameParts = file.name.split('.');
-                if(nameParts.length > 1) document.getElementById('fileExt').value = nameParts.pop();
+                if (nameParts.length > 1) setExt(nameParts.pop());
                 document.getElementById('fileName').value = nameParts.join('.');
-                showToast(`File loaded: ${file.name}`);
+                snap();
                 updateStats();
+                updateScrollbar();
+                saveState();
+                showToast(`File loaded: ${file.name}`);
             };
             reader.readAsText(file);
+            e.target.value = '';
         });
 
-        // Download Flow
         document.getElementById('saveBtn').addEventListener('click', () => {
-            if(!editor.value.trim()) { showToast("Editor is empty!", true); return; }
-            
+            if (!editor.value.trim()) { showToast("Editor is empty!", true); return; }
             const name = document.getElementById('fileName').value || 'untitled';
             const ext = document.getElementById('fileExt').value;
             const size = new Blob([editor.value]).size;
-            
             document.getElementById('finalName').innerText = `${name}.${ext}`;
-            document.getElementById('finalSize').innerText = size < 1024 ? `${size} B` : `${(size/1024).toFixed(1)} KB`;
-            
+            document.getElementById('finalSize').innerText = size < 1024 ? `${size} B` : `${(size / 1024).toFixed(1)} KB`;
             document.getElementById('modal').classList.add('active');
         });
 
         function closeModal() { document.getElementById('modal').classList.remove('active'); }
 
         function processDownload() {
-            const content = editor.value;
             const name = document.getElementById('fileName').value || 'untitled';
             const ext = document.getElementById('fileExt').value;
-            const filename = `${name}.${ext}`;
-            
-            const blob = new Blob([content], {type: 'text/plain'});
+            const blob = new Blob([editor.value], { type: 'text/plain' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = filename;
+            link.download = `${name}.${ext}`;
             link.click();
-            
             closeModal();
             showToast("File Downloaded Successfully!");
         }
 
-        // 5. Utilities (Copy, Clear, Search, Toast)
+        // 6. Utilities
         function showToast(msg, isError = false) {
             const t = document.getElementById('toast');
             document.getElementById('toastMsg').innerText = msg;
             t.querySelector('i').className = isError ? "fa-solid fa-circle-exclamation" : "fa-solid fa-circle-check";
             t.querySelector('i').style.color = isError ? "var(--danger)" : "var(--success)";
-            
             t.classList.add('visible');
-            setTimeout(() => t.classList.remove('visible'), 3000);
+            clearTimeout(showToast._t);
+            showToast._t = setTimeout(() => t.classList.remove('visible'), 3000);
         }
 
         async function copyContent() {
-            if(!editor.value) return;
+            if (!editor.value) return;
             try {
-                // Primary Method
                 await navigator.clipboard.writeText(editor.value);
                 showToast("Copied to Clipboard");
-            } catch(e) {
-                // Fallback Method for older/non-HTTPS browsers
+            } catch (e) {
                 try {
-                    const textArea = document.createElement("textarea");
-                    textArea.value = editor.value;
-                    document.body.appendChild(textArea);
-                    textArea.select();
+                    const ta = document.createElement("textarea");
+                    ta.value = editor.value;
+                    document.body.appendChild(ta);
+                    ta.select();
                     document.execCommand('copy');
-                    document.body.removeChild(textArea);
+                    document.body.removeChild(ta);
                     showToast("Copied (Legacy)");
-                } catch (err) {
-                    showToast("Copy Failed", true);
-                }
+                } catch (err) { showToast("Copy Failed", true); }
             }
         }
 
         function clearContent() {
-            if(editor.value.length < 1) return;
+            if (editor.value.length < 1) return;
             document.getElementById('clearModal').classList.add('active');
         }
-
         function closeClearModal() { document.getElementById('clearModal').classList.remove('active'); }
 
-        // CYBER PICKER LOGIC
+        function confirmClear() {
+            closeClearModal();
+            flushHist();
+            editor.value = '';
+            snap();
+            updateStats();
+            updateScrollbar();
+            saveState();
+            refreshCount();
+            showToast("Cleared. Undo se wapas aa sakta hai");
+        }
+
+        // Format picker
         function toggleExtList() {
             document.getElementById('extList').classList.toggle('show');
             const icon = document.querySelector('.select-trigger i');
             icon.style.transform = document.getElementById('extList').classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
         }
-
-        function selectExt(val) {
+        function setExt(val) {
             document.getElementById('fileExt').value = val;
             document.getElementById('selectedExt').innerText = '.' + val;
-            
-            // Update Active UI
             document.querySelectorAll('.option-item').forEach(opt => {
-                opt.classList.remove('active');
-                if(opt.innerText === '.' + val) opt.classList.add('active');
+                opt.classList.toggle('active', opt.innerText === '.' + val);
             });
-            
+        }
+        function selectExt(val) {
+            setExt(val);
             toggleExtList();
             saveState();
         }
-
-        // Close when clicking outside
         window.addEventListener('click', (e) => {
             if (!e.target.closest('.custom-select-wrapper')) {
                 document.getElementById('extList').classList.remove('show');
@@ -657,81 +688,179 @@
             }
         });
 
-        function confirmClear() {
-            closeClearModal();
-            editor.value = '';
-            updateStats();
+        // 7. FIND & REPLACE
+        let matchCase = false;
+
+        function searchOpen() { return document.getElementById('searchBar').classList.contains('open'); }
+
+        function toggleSearch(force) {
+            const bar = document.getElementById('searchBar');
+            const open = typeof force === 'boolean' ? force : !bar.classList.contains('open');
+            bar.classList.toggle('open', open);
+            document.getElementById('searchToggle').classList.toggle('on', open);
+            document.getElementById('editorZone').style.setProperty('--sb-h', open ? bar.offsetHeight + 'px' : '0px');
+            if (open) {
+                const sel = editor.value.slice(editor.selectionStart, editor.selectionEnd);
+                if (sel && sel.length < 100 && !sel.includes('\n')) searchInput.value = sel;  // selected text se search
+                searchInput.focus();
+                searchInput.select();
+                refreshCount();
+            }
             updateScrollbar();
-            saveState();
-            showToast("Editor Cleared");
         }
 
-        function toggleSearch() {
-            const input = document.getElementById('searchInput');
-            // If box is open and has text, search first!
-            if (input.classList.contains('active') && input.value.trim() !== "") {
-                findText();
+        function toggleCase() {
+            matchCase = !matchCase;
+            document.getElementById('caseBtn').classList.toggle('on', matchCase);
+            refreshCount();
+        }
+
+        function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+        function getMatches() {
+            const q = searchInput.value;
+            if (!q) return [];
+            const re = new RegExp(escapeRe(q), matchCase ? 'g' : 'gi');
+            const text = editor.value, out = [];
+            let m;
+            while ((m = re.exec(text)) !== null) {
+                out.push({ i: m.index, l: m[0].length });
+                if (m[0].length === 0) re.lastIndex++;
+                if (out.length > 50000) break;
+            }
+            return out;
+        }
+
+        function setInfo(txt, none) {
+            const el = document.getElementById('matchInfo');
+            el.innerText = txt;
+            el.classList.toggle('none', !!none);
+        }
+
+        function refreshCount(cur) {
+            if (!searchInput.value) { setInfo('0'); return; }
+            const n = getMatches().length;
+            if (!n) setInfo('0/0', true);
+            else setInfo(cur ? `${cur}/${n}` : `${n} mile`);
+        }
+
+        // Caret ki vertical position nikalne ke liye hidden mirror (wrapped Hindi text ke liye sahi)
+        function caretTop(idx) {
+            const cs = getComputedStyle(editor);
+            const m = document.createElement('div');
+            ['fontFamily', 'fontSize', 'lineHeight', 'letterSpacing', 'wordSpacing',
+             'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'].forEach(p => m.style[p] = cs[p]);
+            m.style.position = 'absolute';
+            m.style.visibility = 'hidden';
+            m.style.left = '-9999px';
+            m.style.top = '0';
+            m.style.whiteSpace = 'pre-wrap';
+            m.style.overflowWrap = 'break-word';
+            m.style.boxSizing = 'border-box';
+            m.style.width = editor.clientWidth + 'px';
+            m.textContent = editor.value.slice(0, idx);
+            const span = document.createElement('span');
+            span.textContent = '\u200b';
+            m.appendChild(span);
+            document.body.appendChild(m);
+            const top = span.offsetTop;
+            document.body.removeChild(m);
+            return top;
+        }
+
+        function reveal(idx, center) {
+            const top = caretTop(idx);
+            const lh = parseFloat(getComputedStyle(editor).lineHeight) || 24;
+            const view = editor.clientHeight;
+            if (center) {
+                editor.scrollTo({ top: Math.max(0, top - view / 3), behavior: 'smooth' });
+            } else if (top < editor.scrollTop || top + lh > editor.scrollTop + view) {
+                editor.scrollTo({ top: Math.max(0, top - view / 3) });
+            }
+        }
+
+        function goTo(m) {
+            editor.focus({ preventScroll: true });
+            editor.setSelectionRange(m.i, m.i + m.l);
+            reveal(m.i, true);
+        }
+
+        function findNext(dir = 1) {
+            const q = searchInput.value;
+            if (!q) { searchInput.focus(); showToast("Pehle search text likho", true); return; }
+            const matches = getMatches();
+            if (!matches.length) { setInfo('0/0', true); showToast("Not found", true); return; }
+
+            let idx;
+            if (dir > 0) {
+                idx = matches.findIndex(m => m.i >= editor.selectionEnd);
+                if (idx === -1) { idx = 0; showToast("Start se dobara"); }
             } else {
-                input.classList.toggle('active');
-                if(input.classList.contains('active')) input.focus();
+                idx = -1;
+                for (let k = matches.length - 1; k >= 0; k--) {
+                    if (matches[k].i < editor.selectionStart) { idx = k; break; }
+                }
+                if (idx === -1) { idx = matches.length - 1; showToast("End se dobara"); }
             }
+            goTo(matches[idx]);
+            setInfo(`${idx + 1}/${matches.length}`);
         }
 
-        function findText() {
-            const query = document.getElementById('searchInput').value;
-            const text = editor.value;
-            if(!query || !text.includes(query)) { showToast("Not found", true); return; }
-            
-            const idx = text.indexOf(query);
-            
-            // Execute focus and selection
-            editor.focus();
-            editor.setSelectionRange(idx, idx + query.length);
-
-            // High Precision Centering
-            const styles = window.getComputedStyle(editor);
-            const lineHeight = parseFloat(styles.lineHeight);
-            const paddingTop = parseFloat(styles.paddingTop);
-            const linesBefore = text.substr(0, idx).split('\n').length;
-
-            // Math to put selection in the absolute center
-            const scrollTarget = (linesBefore * lineHeight) + paddingTop - (editor.clientHeight / 2) + (lineHeight / 2);
-            
-            editor.scrollTo({
-                top: scrollTarget,
-                behavior: 'smooth'
-            });
-            
-            showToast("Found & Focused");
+        function isSelectionMatch() {
+            const q = searchInput.value;
+            if (!q) return false;
+            const sel = editor.value.slice(editor.selectionStart, editor.selectionEnd);
+            return matchCase ? sel === q : sel.toLowerCase() === q.toLowerCase();
         }
 
-        function toggleSidebar() {
-            sidebar.classList.toggle('open');
-            // Close sidebar when clicking outside on mobile
-            if(sidebar.classList.contains('open')) {
-                document.addEventListener('click', closeSidebarOutside);
-            }
-        }
-        function closeSidebarOutside(e) {
-            if(!sidebar.contains(e.target) && !e.target.classList.contains('mobile-menu-btn')) {
-                sidebar.classList.remove('open');
-                document.removeEventListener('click', closeSidebarOutside);
-            }
+        function replaceOne() {
+            if (!searchInput.value) { searchInput.focus(); return; }
+            if (!isSelectionMatch()) { findNext(1); return; }   // pehle match select karo
+            flushHist();
+            const s = editor.selectionStart, e = editor.selectionEnd;
+            const rep = replaceInput.value;
+            editor.value = editor.value.slice(0, s) + rep + editor.value.slice(e);
+            editor.setSelectionRange(s + rep.length, s + rep.length);
+            snap();
+            updateStats(); updateScrollbar(); saveState();
+            findNext(1);
         }
 
-        // 6. Smooth Scrollbar Logic (The "Butter" Feel)
-        let isDragging = false;
-        let startY, startScrollTop;
+        function replaceAll() {
+            const q = searchInput.value;
+            if (!q) { searchInput.focus(); return; }
+            const matches = getMatches();
+            if (!matches.length) { showToast("Not found", true); return; }
+            flushHist();
+            const rep = replaceInput.value;
+            const re = new RegExp(escapeRe(q), matchCase ? 'g' : 'gi');
+            editor.value = editor.value.replace(re, () => rep);
+            snap();
+            updateStats(); updateScrollbar(); saveState();
+            refreshCount();
+            showToast(`${matches.length} jagah replace hua. Undo available`);
+        }
+
+        searchInput.addEventListener('input', () => refreshCount());
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); findNext(e.shiftKey ? -1 : 1); }
+            if (e.key === 'Escape') toggleSearch(false);
+        });
+        replaceInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); replaceOne(); }
+            if (e.key === 'Escape') toggleSearch(false);
+        });
+
+        // 8. Smooth Scrollbar
+        let isDragging = false, startY, startScrollTop;
 
         function updateScrollbar() {
-            if(isDragging) return;
+            if (isDragging) return;
             const { scrollTop, scrollHeight, clientHeight } = editor;
-            if(scrollHeight <= clientHeight) { thumb.style.height = '0px'; return; }
-            
+            if (scrollHeight <= clientHeight) { thumb.style.height = '0px'; return; }
             const thumbHeight = Math.max((clientHeight / scrollHeight) * clientHeight, 40);
             const maxTop = clientHeight - thumbHeight;
             const scrollPercent = scrollTop / (scrollHeight - clientHeight);
-            
             thumb.style.height = `${thumbHeight}px`;
             thumb.style.transform = `translateY(${scrollPercent * maxTop}px)`;
         }
@@ -741,33 +870,25 @@
             thumb.classList.add('active');
             startY = e.clientY;
             startScrollTop = editor.scrollTop;
-            document.body.style.userSelect = 'none'; // Prevent text selection
+            document.body.style.userSelect = 'none';
         });
-
         document.addEventListener('mousemove', (e) => {
-            if(!isDragging) return;
+            if (!isDragging) return;
             const deltaY = e.clientY - startY;
             const { scrollHeight, clientHeight } = editor;
             const thumbHeight = parseFloat(thumb.style.height);
             const maxTop = clientHeight - thumbHeight;
-            
-            // Calculate movement ratio
-            const ratio = deltaY / maxTop;
-            editor.scrollTop = startScrollTop + (ratio * (scrollHeight - clientHeight));
-            
-            // Visual update directly for lag-free feel
+            editor.scrollTop = startScrollTop + (deltaY / maxTop) * (scrollHeight - clientHeight);
             requestAnimationFrame(updateScrollbar);
         });
-
         document.addEventListener('mouseup', () => {
             isDragging = false;
             thumb.classList.remove('active');
             document.body.style.userSelect = '';
         });
 
-        editor.addEventListener('scroll', () => { if(!isDragging) requestAnimationFrame(updateScrollbar); });
+        editor.addEventListener('scroll', () => { if (!isDragging) requestAnimationFrame(updateScrollbar); });
         window.addEventListener('resize', updateScrollbar);
-        
     </script>
 </body>
 </html>
